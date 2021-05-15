@@ -10,6 +10,10 @@ version '1.0-SNAPSHOT'
 repositories {
     mavenCentral()
     jcenter()
+    maven {
+        name 'm2-dv8tion'
+        url 'https://m2.dv8tion.net/releases'
+    }
 }
 
 dependencies {
@@ -21,6 +25,7 @@ dependencies {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
-    compile 'net.dv8tion:JDA:4.2.0_208'
+    implementation 'com.google.code.gson:gson:2.8.6'
+    compile 'net.dv8tion:JDA:4.2.1_262'
+    compile 'org.apache.httpcomponents:httpclient:4.5.13'
 }

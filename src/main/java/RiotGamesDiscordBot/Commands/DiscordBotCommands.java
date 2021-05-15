@@ -13,6 +13,8 @@ import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class DiscordBotCommands extends ListenerAdapter {
@@ -44,8 +46,12 @@ public class DiscordBotCommands extends ListenerAdapter {
                                 handleSummonerInfoRequest(event, message);
                                 break;
                             case "-t":
-                            handleTournamentRequest(event, message);
-                            break;
+                                try {
+                                    handleTournamentRequest(event, message);
+                                } catch (MalformedURLException e) {
+                                    e.printStackTrace();
+                                }
+                                break;
                         }
 
                     }
@@ -116,7 +122,7 @@ public class DiscordBotCommands extends ListenerAdapter {
         }
     }
 
-    private void handleTournamentRequest(GuildMessageReceivedEvent event, String[] message) {
+    private void handleTournamentRequest(GuildMessageReceivedEvent event, String[] message) throws MalformedURLException {
         if (message.length == 2) {
             event.getChannel().sendMessage("Please list the teams that will be participating.").queue();
             return;
@@ -142,5 +148,10 @@ public class DiscordBotCommands extends ListenerAdapter {
         catch (IOException exception) {
             exception.printStackTrace();
         }
+
+        RiotGamesAPI riotGamesAPI = new RiotGamesAPI();
+        int providerID = riotGamesAPI.getProviderID(new URL("https://riot-api-tournaments.herokuapp.com/matchResult"), "NA");
+        int tournamentID = riotGamesAPI.getTournamentID(998, "New Tournament");
+        event.getChannel().sendMessage("Provider ID: " + 998 + "\nTournament ID: " + tournamentID).queue();
     }
 }

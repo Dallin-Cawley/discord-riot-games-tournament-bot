@@ -1,11 +1,10 @@
 package RiotGamesDiscordBot;
 
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
+import com.google.gson.Gson;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -25,5 +24,14 @@ public class TournamentBotDriver {
         this.textChannels.get(0).sendMessage(message).queue();
 
         return "Message sent";
+    }
+
+    @PostMapping(value = "/matchResult")
+    public @ResponseBody
+    String matchResult(@RequestBody String matchResultJson) {
+        MatchResult matchResult = new Gson().fromJson(matchResultJson, MatchResult.class);
+
+
+        return "Done";
     }
 }
