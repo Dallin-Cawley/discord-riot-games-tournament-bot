@@ -20,16 +20,17 @@ public class Logger {
 
         String levelInfo;
         switch (level) {
-            case INFO:
-                levelInfo = ConsoleColors.GREEN_BOLD + "INFO" + ConsoleColors.RESET;
-                break;
             case WARNING:
                 levelInfo = ConsoleColors.YELLOW_BOLD + "WARNING" + ConsoleColors.RESET;
                 break;
             case ERROR:
                 levelInfo = ConsoleColors.RED_BOLD + "ERROR" + ConsoleColors.RESET;
                 break;
-        };
+            case INFO:
+            default:
+                levelInfo = ConsoleColors.GREEN_BOLD + "INFO" + ConsoleColors.RESET;
+                break;
+        }
 
         System.out.println(logInfo + levelInfo + " " + message);
     }
