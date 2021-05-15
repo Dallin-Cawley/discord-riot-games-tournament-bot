@@ -18,10 +18,17 @@ public class Logger {
 
         String logInfo = ConsoleColors.CYAN + "[ " + threadName + " : " + formattedDate + " ] " + ConsoleColors.RESET;
 
-        String levelInfo = switch (level) {
-            case INFO -> ConsoleColors.GREEN_BOLD + "INFO" + ConsoleColors.RESET;
-            case WARNING -> ConsoleColors.YELLOW_BOLD + "WARNING" + ConsoleColors.RESET;
-            case ERROR -> ConsoleColors.RED_BOLD + "ERROR" + ConsoleColors.RESET;
+        String levelInfo;
+        switch (level) {
+            case INFO:
+                levelInfo = ConsoleColors.GREEN_BOLD + "INFO" + ConsoleColors.RESET;
+                break;
+            case WARNING:
+                levelInfo = ConsoleColors.YELLOW_BOLD + "WARNING" + ConsoleColors.RESET;
+                break;
+            case ERROR:
+                levelInfo = ConsoleColors.RED_BOLD + "ERROR" + ConsoleColors.RESET;
+                break;
         };
 
         System.out.println(logInfo + levelInfo + " " + message);
