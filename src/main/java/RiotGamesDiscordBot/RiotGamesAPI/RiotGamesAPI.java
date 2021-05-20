@@ -18,11 +18,12 @@ import java.nio.charset.StandardCharsets;
 
 public class RiotGamesAPI {
     private static final String BASE_URL = "https://na1.api.riotgames.com/";
+    private static final String REGIONAL_BASE_URL = "https://americas.api.riotgames.com/";
 
 
     public int getProviderID(URL callBackURL, String region) {
         try {
-            URI uri = new URI(BASE_URL + "/lol/tournament-stub/v4/providers");
+            URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/providers");
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
             requestContents.addRequestBodyAttribute("region", region);
             requestContents.addRequestBodyAttribute("url", callBackURL.toString());
@@ -39,7 +40,7 @@ public class RiotGamesAPI {
 
     public int getTournamentID(int providerID, String tournamentName) {
         try {
-            URI uri = new URI(BASE_URL + "/lol/tournament-stub/v4/tournaments");
+            URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/tournaments");
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
             requestContents.addRequestBodyAttribute("name", tournamentName);
             requestContents.addRequestBodyAttribute("providerId", providerID);
