@@ -4,17 +4,12 @@ import RiotGamesDiscordBot.Commands.CommandHandlers.CommandHandler;
 import RiotGamesDiscordBot.Commands.CommandHandlers.SummonerInfoCommandHandler;
 import RiotGamesDiscordBot.Commands.CommandHandlers.TournamentCommandHandler;
 import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.BracketManager;
-import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
 import com.google.gson.Gson;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -32,31 +27,43 @@ public class DiscordBotCommands extends ListenerAdapter {
         String[] message = event.getMessage().getContentRaw().split("\\s+");
         Iterator<String> messageIterator = Arrays.stream(message).iterator();
         String command = messageIterator.next();
+        //League of Legends command
         if (command.equals("~lol")) {
-            CommandHandler commandHandler;
+            CommandHandler commandHandler = null;
             if (messageIterator.hasNext()) {
                 String arg2 = messageIterator.next();
                 switch (arg2) {
+                    //Summoner Info
                     case "-si":
                         commandHandler = new SummonerInfoCommandHandler(event, messageIterator);
                         break;
+                    //Tournament Start
                     case "-t":
+                    default:
                         commandHandler = new TournamentCommandHandler(event, messageIterator);
-                        break;
                 }
+
+                commandHandler.handle();
 
             } else {
                 event.getChannel().sendMessage("Please provide a command.").queue();
             }
         }
+        //Any other message
         else {
             String channelName = event.getChannel().getName();
+
+            //The tournament update channel
             if (channelName.equals("tournament-details")) {
                 TextChannel channel = event.getChannel();
+
+                //Expected to be the bracket image
                 String recentMessageId = channel.getLatestMessageId();
                 try {
                     Message recentMessage = channel.retrieveMessageById(recentMessageId).complete();
                     MessageType messageType = recentMessage.getType();
+
+                    //Delete all non-pinned messages in channel
                     if (!messageType.equals(MessageType.CHANNEL_PINNED_ADD)) {
                         for (Message pinnedMessage : channel.retrievePinnedMessages().complete()) {
                             channel.deleteMessageById(pinnedMessage.getId()).queue();
@@ -74,11 +81,5 @@ public class DiscordBotCommands extends ListenerAdapter {
                 }
             }
         }
-    }
-
-    private void handleTournamentRequest(GuildMessageReceivedEvent event, String[] message) throws MalformedURLException {
-        RiotGamesAPI riotGamesAPI = new RiotGamesAPI();
-        int providerID = riotGamesAPI.getProviderID(new URL("https://riot-api-tournaments.herokuapp.com/matchResult"), "NA");
-        int tournamentID = riotGamesAPI.getTournamentID(providerID, "New Tournament");
     }
 }

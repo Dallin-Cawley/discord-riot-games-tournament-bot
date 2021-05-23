@@ -41,6 +41,8 @@ public class RiotAPIResponseHandler {
                 successful = false;
                 break;
             case 403: //Forbidden
+                System.out.println("Forbidden. Did you refresh the API token?");
+                break;
             case 404: //Not Found
             case 415: //Unsupported Media Type
             case 429: //Rate Limit Exceeded

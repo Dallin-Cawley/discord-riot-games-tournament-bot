@@ -1,5 +1,7 @@
 package RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration;
 
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
+import RiotGamesDiscordBot.Tournament.Match;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -13,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class BracketManager {
+public abstract class BracketManager {
     private final BufferedImage bracketImage;
     private final Graphics2D bracketGraphics;
 
@@ -24,11 +26,11 @@ public class BracketManager {
     private final int imageHeight;
     private final int imageWidth;
 
-    private final List<Match> matches;
+    private final List<MatchImage> matchImages;
 
 
     public BracketManager(ArrayList<String> teamNames, JDA discordAPI) throws IOException {
-        this.matches = new ArrayList<>();
+        this.matchImages = new ArrayList<>();
         this.discordAPI = discordAPI;
         this.imageFile = new File("bracketImage.png");
 
@@ -48,8 +50,6 @@ public class BracketManager {
         this.imageWidth = (rounds * 240) + 200;
         this.bracketImage = new BufferedImage(this.imageWidth,
                 this.imageHeight, BufferedImage.TYPE_4BYTE_ABGR);
-        System.out.println("Image Height: " + this.bracketImage.getHeight());
-        System.out.println("Image Width: " + this.bracketImage.getWidth());
 
         //Create and set up the graphics
         this.bracketGraphics = this.bracketImage.createGraphics();
@@ -68,7 +68,7 @@ public class BracketManager {
         matchNum = teamNames.size() / 2;
         int team = 0;
         for (int match = 0; match < matchNum; match++, team += 2) {
-            Match temp = this.matches.get(match);
+            MatchImage temp = this.matchImages.get(match);
             temp.setTeamOne(teamNames.get(team), this.bracketGraphics);
             temp.setTeamTwo(teamNames.get(team + 1), this.bracketGraphics);
         }
@@ -80,9 +80,13 @@ public class BracketManager {
 
     }
 
-    public void updateBrackets(Match match) throws IOException {
+    public abstract void generateBracket(List<Match> matches);
+
+    public abstract void updateBracket(MatchResult matchResult);
+
+    public void updateBrackets(MatchImage matchImage) throws IOException {
         //Redraw match image section in parent image
-        this.bracketGraphics.drawImage(match.getMatchImage(), null, match.getPositionX(), match.getPositionY());
+        this.bracketGraphics.drawImage(matchImage.getMatchImage(), null, matchImage.getPositionX(), matchImage.getPositionY());
         sendBracketToChannel();
     }
 
@@ -111,32 +115,32 @@ public class BracketManager {
         int centerMatchOffset = (imageHeightFragment / 2) - 50;
 
         if (matchNum == 1) {
-            Match match1 = new Match(this, (round * 240), centerMatchOffset);
-            this.bracketGraphics.drawImage(match1.getMatchImage(), null, match1.getPositionX(), match1.getPositionY());
+            MatchImage matchImage1 = new MatchImage(this, (round * 240), centerMatchOffset);
+            this.bracketGraphics.drawImage(matchImage1.getMatchImage(), null, matchImage1.getPositionX(), matchImage1.getPositionY());
 
             int xPosition = (round * 240) + 200;
-            this.bracketGraphics.drawRect(xPosition, match1.getPositionY() + 49, 25, 3);
-            this.bracketGraphics.fillRect(xPosition, match1.getPositionY() + 49, 25, 3);
+            this.bracketGraphics.drawRect(xPosition, matchImage1.getPositionY() + 49, 25, 3);
+            this.bracketGraphics.fillRect(xPosition, matchImage1.getPositionY() + 49, 25, 3);
             return;
         }
 
         for (int match = 0; match < matchNum; match += 2) {
 
             //Create the 2 matches to be connected by the leaf
-            Match match1 = new Match(this, (round * 240), (match * imageHeightFragment) + centerMatchOffset);
-            this.bracketGraphics.drawImage(match1.getMatchImage(), null, match1.getPositionX(), match1.getPositionY());
+            MatchImage matchImage1 = new MatchImage(this, (round * 240), (match * imageHeightFragment) + centerMatchOffset);
+            this.bracketGraphics.drawImage(matchImage1.getMatchImage(), null, matchImage1.getPositionX(), matchImage1.getPositionY());
 
-            Match match2 = new Match (this, (round * 240), ((match + 1) * imageHeightFragment) + centerMatchOffset);
-            this.bracketGraphics.drawImage(match2.getMatchImage(), null, match2.getPositionX(), match2.getPositionY());
+            MatchImage matchImage2 = new MatchImage(this, (round * 240), ((match + 1) * imageHeightFragment) + centerMatchOffset);
+            this.bracketGraphics.drawImage(matchImage2.getMatchImage(), null, matchImage2.getPositionX(), matchImage2.getPositionY());
 
             //Create the leaf
-            int topArmPosition = match1.getPositionY() + 49;
-            int bottomArmPosition = match2.getPositionY() + 49;
+            int topArmPosition = matchImage1.getPositionY() + 49;
+            int bottomArmPosition = matchImage2.getPositionY() + 49;
             int xPosition = (round * 240) + 200;
             new BracketLeaf(xPosition, topArmPosition, bottomArmPosition, this.bracketGraphics);
 
-            this.matches.add(match1);
-            this.matches.add(match2);
+            this.matchImages.add(matchImage1);
+            this.matchImages.add(matchImage2);
 
         }
     }

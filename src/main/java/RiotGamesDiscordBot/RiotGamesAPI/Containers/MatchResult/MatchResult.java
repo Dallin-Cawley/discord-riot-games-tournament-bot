@@ -41,10 +41,7 @@ public class MatchResult {
 
     @Override
     public String toString() {
-        StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(this.metaData.title).append(" : ").append(this.region).append(" - ").append(this.gameMode);
-
-        return stringBuilder.toString();
+        return this.metaData.title + " : " + this.region + " - " + this.gameMode;
     }
 }

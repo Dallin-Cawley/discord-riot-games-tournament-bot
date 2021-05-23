@@ -34,11 +34,9 @@ public class SummonerInfoCommandHandler extends CommandHandler {
         try {
             //Get Summoner Info
             SummonerInfo summonerInfo = gson.fromJson(riotGamesAPI.getSummonerInfoByName(summonerName), SummonerInfo.class);
-
             //Get ranked info for previous Summoner
             ArrayList<RankedInfo> rankedInfo = gson.fromJson(riotGamesAPI.getSummonerRankInfoByEncryptedSummonerID(summonerInfo.getEncryptedSummonerId()),
-                    new TypeToken<ArrayList<RankedInfo>>() {
-                    }.getType());
+                    new TypeToken<ArrayList<RankedInfo>>() {}.getType());
             summonerInfo.setRankedInfo(rankedInfo);
 
             //Create the Embedded Message
