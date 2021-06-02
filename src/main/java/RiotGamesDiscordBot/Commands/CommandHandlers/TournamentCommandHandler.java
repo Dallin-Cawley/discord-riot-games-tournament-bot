@@ -1,31 +1,33 @@
 package RiotGamesDiscordBot.Commands.CommandHandlers;
 
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.*;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.Region;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
+import RiotGamesDiscordBot.Tournament.RoundRobin.RoundRobinTournament;
+import RiotGamesDiscordBot.Tournament.Team;
+import RiotGamesDiscordBot.Tournament.Tournament;
+import RiotGamesDiscordBot.Tournament.TournamentConfig;
+import RiotGamesDiscordBot.Tournament.TournamentType;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
 public class TournamentCommandHandler extends CommandHandler{
-    private final Map<String, List<String>> teams;
     private final RiotGamesAPI riotAPI;
 
     public TournamentCommandHandler(GuildMessageReceivedEvent event, Iterator<String> messageIterator) {
         super(event, messageIterator);
-        this.teams = new HashMap<>();
         this.riotAPI = new RiotGamesAPI();
     }
 
@@ -51,69 +53,67 @@ public class TournamentCommandHandler extends CommandHandler{
         }
 
         //Get the Team Names and Members
-        this.getTeamsFromExcelFile(teamListFile);
+        List<Team> teams = this.getTeamsFromExcelFile(teamListFile);
 
-        //Retrieve provider ID
+        //Get provider and tournament ID
         try {
-            int providerID = riotAPI.getProviderID(new URL("https://callback.com"), Region.NA);
-            int tournamentID = riotAPI.getTournamentID(providerID, "New Tournament");
+            int providerId = riotAPI.getProviderID(new URL("https://www.google.com"), Region.NA);
+            long tournamentId = riotAPI.getTournamentID(providerId, "New Tournament");
 
-            List<String> team1Members = this.teams.get("Team Fire");
-            List<String> team2Members = this.teams.get("Team Rock");
-
-            List<String> allowedSummonerIDs = new ArrayList<>();
-            for (String teamMember : team1Members) {
-                teamMember = teamMember.replace(" ", "%20");
-                String summonerInfoJSON = riotAPI.getSummonerInfoByName(teamMember);
-                allowedSummonerIDs.add(new Gson().fromJson(summonerInfoJSON, SummonerInfo.class).getEncryptedSummonerId());
+            //Get Tournament Type
+            TournamentConfig tournamentConfig = new TournamentConfig(teamListFile);
+            Tournament tournament;
+            switch (tournamentConfig.getTournamentType()) {
+                case ROUND_ROBIN:
+                    tournament = new RoundRobinTournament(providerId, tournamentId, tournamentConfig);
+                    break;
+                case SINGLE_ELIMINATION:
+                default:
+                    //TODO: Single Elimination Tournament
+                    tournament = null;
             }
 
-            for (String teamMember : team2Members) {
-                teamMember = teamMember.replace(" ", "%20");
-                String summonerInfoJSON = riotAPI.getSummonerInfoByName(teamMember);
-                allowedSummonerIDs.add(new Gson().fromJson(summonerInfoJSON, SummonerInfo.class).getEncryptedSummonerId());
-            }
-
-            String tournamentCodes = riotAPI.getTournamentCodes(tournamentID, 5, allowedSummonerIDs, MapType.SUMMONERS_RIFT, PickType.TOURNAMENT_DRAFT, SpectatorType.ALL, 5);
-            System.out.println("Provider ID: " + providerID);
-            System.out.println("Tournament ID: " + tournamentID);
-            System.out.println("Tournament Codes: " + tournamentCodes);
-
-
-        } catch (IOException exception) {
+            tournament.setup(teams);
+        }
+        catch (MalformedURLException exception) {
             exception.printStackTrace();
         }
+
     }
 
-    public void getTeamsFromExcelFile(File teamListFile) {
+    public List<Team> getTeamsFromExcelFile(File teamListFile) {
         try {
             Workbook workbook = new XSSFWorkbook(new FileInputStream(teamListFile));
             Sheet teamListSheet = workbook.getSheetAt(0);
+            List<Team> teams = new ArrayList<>();
 
             //Get Team Names
             Row teamNamesRow = teamListSheet.getRow(0);
             for (int colIndex = 0; colIndex < teamNamesRow.getLastCellNum(); colIndex++) {
-                teams.put(teamNamesRow.getCell(colIndex).getStringCellValue(), new ArrayList<>());
+                teams.add(new Team(teamNamesRow.getCell(colIndex).getStringCellValue()));
             }
 
             //Get Team Members
-            for (int rowIndex = 1; rowIndex <= teamListSheet.getLastRowNum(); rowIndex++) {
+            Gson gson = new Gson();
+            for (int rowIndex = 1; rowIndex < 6; rowIndex++) {
                 Row row = teamListSheet.getRow(rowIndex);
-                Iterator<Cell> teamNameIter = teamNamesRow.cellIterator();
                 for (int colIndex = 0; colIndex < row.getLastCellNum(); colIndex++) {
-                    if (teamNameIter.hasNext()) {
-                        String teamMember = row.getCell(colIndex).getStringCellValue();
-                        this.teams.get(teamNameIter.next().getStringCellValue()).add(teamMember);
-                    }
-                    else {
+                    String teamMember = row.getCell(colIndex).getStringCellValue();
+
+                    if (teamMember.isEmpty()) {
                         break;
                     }
-
+                    SummonerInfo summonerInfo = gson.fromJson(riotAPI.getSummonerInfoByName(teamMember), SummonerInfo.class);
+                    teams.get(colIndex).addMember(summonerInfo);
                 }
             }
+
+            return teams;
         }
         catch (IOException exception) {
             exception.printStackTrace();
         }
+
+        return null;
     }
 }

@@ -9,6 +9,7 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class RiotAPIResponseHandler {
     private boolean canAttempt;
@@ -36,15 +37,25 @@ public class RiotAPIResponseHandler {
         int statusCode = response.getStatusLine().getStatusCode();
         switch (statusCode) {
             case 400: //Bad Request
+                System.out.println("400 Bad Request");
+                canAttempt = false;
+                successful = false;
+                break;
             case 401: //Unauthorized
+            case 404: //Not Found
                 canAttempt = false;
                 successful = false;
                 break;
             case 403: //Forbidden
                 System.out.println("Forbidden. Did you refresh the API token?");
+                canAttempt = false;
+                successful = false;
                 break;
-            case 404: //Not Found
             case 415: //Unsupported Media Type
+                System.out.println("Unsupported Media Type");
+                canAttempt = false;
+                successful = false;
+                break;
             case 429: //Rate Limit Exceeded
                 this.handle429(response);
                 break;
@@ -63,7 +74,7 @@ public class RiotAPIResponseHandler {
 
     private void handle429(CloseableHttpResponse response) {
         Header[] headers = response.getHeaders("Retry-After");
-        int retryAfter = Integer.parseInt(headers[0].getElements()[0].getValue());
+        int retryAfter = Integer.parseInt(headers[0].getElements()[0].getName());
         try {
             Thread.sleep(retryAfter * 1000L);
         }

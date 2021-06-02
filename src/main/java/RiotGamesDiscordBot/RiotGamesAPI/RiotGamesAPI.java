@@ -3,13 +3,10 @@ package RiotGamesDiscordBot.RiotGamesAPI;
 import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotAPIError;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.MapType;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.ProviderRegistrationParameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentRegistrationParameters;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.PickType;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Region;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.SpectatorType;
 import com.google.gson.Gson;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.StringEntity;
@@ -22,8 +19,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Set;
 
 public class RiotGamesAPI {
     private static final String BASE_URL = "https://na1.api.riotgames.com/";
@@ -61,11 +56,11 @@ public class RiotGamesAPI {
         return -1;
     }
 
-    public String getTournamentCodes(int tournamentID, int tournamentCodeNum, List<String> encryptedSummonerIDs, MapType mapType, PickType pickType, SpectatorType spectatorType, int teamSize) {
+    public String getTournamentCodes(long tournamentID, int tournamentCodeNum, TournamentCodeParameters tournamentCodeParameters) {
         try {
             URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/codes?count=" + tournamentCodeNum + "&tournamentId=" + tournamentID);
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
-            requestContents.addRequestBody(new TournamentCodeParameters(encryptedSummonerIDs, teamSize, pickType, mapType, spectatorType, "All for One Match"));
+            requestContents.addRequestBody(tournamentCodeParameters);
             HttpResponseContents responseContents = this.request(requestContents);
             return responseContents.toString();
         }
@@ -78,7 +73,7 @@ public class RiotGamesAPI {
 
     public String getSummonerInfoByName(String summonerName) throws IOException {
         try {
-            URI uri = new URI(BASE_URL + "/lol/summoner/v4/summoners/by-name/" + summonerName);
+            URI uri = new URI(BASE_URL + "/lol/summoner/v4/summoners/by-name/" + summonerName.replace(" ", "%20"));
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.GET);
             HttpResponseContents responseContents = this.request(requestContents);
             return responseContents.toString();

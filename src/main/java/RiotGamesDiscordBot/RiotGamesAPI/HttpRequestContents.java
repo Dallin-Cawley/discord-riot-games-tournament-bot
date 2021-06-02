@@ -25,6 +25,7 @@ public class HttpRequestContents {
 
     public void addRequestBody(Object requestBody) {
         this.requestBody = new Gson().toJson(requestBody);
+        System.out.println("Request Body: " + this.requestBody);
     }
 
     public String getRequestBody() {
