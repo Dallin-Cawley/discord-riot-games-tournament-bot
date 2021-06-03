@@ -5,13 +5,14 @@ import RiotGamesDiscordBot.RiotGamesAPI.Containers.PickType;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SpectatorType;
 import RiotGamesDiscordBot.Tournament.TournamentConfig;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 
 public class TournamentCodeParameters {
-    private final Set<String> allowedSummonerIds;
+    private final List<String> allowedSummonerIds;
     private final double teamSize;
     private final String metadata;
     private final PickType pickType;
@@ -19,14 +20,16 @@ public class TournamentCodeParameters {
     private final SpectatorType spectatorType;
 
     public TournamentCodeParameters(List<String> allowedSummonerIds, TournamentConfig tournamentConfig) {
+        System.out.println("Tournament Code Parameters list size: " + allowedSummonerIds.size());
         this.teamSize = tournamentConfig.getTeamSize();
         this.pickType = tournamentConfig.getPickType();
         this.mapType = tournamentConfig.getMapType();
         this.spectatorType = tournamentConfig.getSpectatorType();
         this.metadata = tournamentConfig.getMetadata();
 
-        this.allowedSummonerIds = new HashSet<>();
+        this.allowedSummonerIds = new ArrayList<>();
         this.allowedSummonerIds.addAll(allowedSummonerIds);
+        System.out.println("Tournament Code Parameters size: " + this.allowedSummonerIds.size());
     }
 
     public double getTeamSize() {

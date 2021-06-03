@@ -117,7 +117,7 @@ public class RiotGamesAPI {
 
             if (!responseHandler.isSuccessful()) {
                 RiotAPIError riotAPIError = new Gson().fromJson(new String(responseHandler.getResponseBytes(), StandardCharsets.UTF_8), RiotAPIError.class);
-                Logger.log(riotAPIError.toString(), Level.WARNING);
+                Logger.log(contents.getUri() + "\n\t" + riotAPIError.toString(), Level.WARNING);
             }
         }
         catch (IOException exception) {
