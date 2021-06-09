@@ -1,5 +1,7 @@
 package RiotGamesDiscordBot;
 
+import RiotGamesDiscordBot.Logging.Level;
+import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
 import RiotGamesDiscordBot.Tournament.TournamentManager;
 import com.google.gson.Gson;
@@ -47,18 +49,20 @@ public class TournamentBotDriver {
         return "Done";
     }
 
-    @RequestMapping(value = "/")
+    @RequestMapping(value = "/riot.txt")
     public ResponseEntity<Object> downloadFile() throws IOException  {
-        String filename = "/riot.txt";
+        String filename = "./riot.txt";
         File file = new File(filename);
         InputStreamResource resource = new InputStreamResource(new FileInputStream(file));
         HttpHeaders headers = new HttpHeaders();
+        Logger.log("Retrieved file", Level.INFO);
 
         headers.add("Content-Disposition", String.format("attachment; filename=\"%s\"", file.getName()));
         headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
         headers.add("Pragma", "no-cache");
         headers.add("Expires", "0");
 
+        Logger.log("Sending response", Level.INFO);
         return ResponseEntity.ok().headers(headers).contentLength(file.length()).contentType(
         MediaType.parseMediaType("application/txt")).body(resource);
     }
