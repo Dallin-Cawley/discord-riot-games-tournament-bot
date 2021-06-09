@@ -47,7 +47,7 @@ public class TournamentBotDriver {
         return "Done";
     }
 
-    @RequestMapping(value = "/riotVerify")
+    @RequestMapping(value = "/")
     public ResponseEntity<Object> downloadFile() throws IOException  {
         String filename = "/riot.txt";
         File file = new File(filename);
