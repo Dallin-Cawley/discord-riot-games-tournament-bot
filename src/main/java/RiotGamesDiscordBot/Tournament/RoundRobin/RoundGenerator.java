@@ -1,12 +1,17 @@
 package RiotGamesDiscordBot.Tournament.RoundRobin;
 
+import RiotGamesDiscordBot.EventHandling.InputEventManager;
+import RiotGamesDiscordBot.Logging.Level;
+import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
 import RiotGamesDiscordBot.Tournament.Match;
+import RiotGamesDiscordBot.Tournament.Round;
 import RiotGamesDiscordBot.Tournament.Team;
 import RiotGamesDiscordBot.Tournament.TournamentConfig;
 import com.google.gson.Gson;
+import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,48 +36,23 @@ public class RoundGenerator {
 
     }
 
-    public List<Match> generateMatches(RiotGamesAPI riotGamesAPI) {
+    public Round generateRound(int roundNum) {
         List<Match> matches = new ArrayList<>();
 
         //Iterate through each pair of teams to create a match
+        Logger.log("Creating Matches for round " + roundNum, Level.INFO);
         for (int i = 0; i < this.topRow.size() && i < this.bottomRow.size(); i++) {
             Team teamOne = this.topRow.get(i);
             Team teamTwo = this.bottomRow.get(i);
 
-            List<SummonerInfo> teamOneMembers = teamOne.getMembers();
-            List<SummonerInfo> teamTwoMembers = teamTwo.getMembers();
-            List<String> participantSummonerIds = new ArrayList<>();
-
-            //Iterate through each member to get the Encrypted Summoner ID of each summoner for the tournament code
-            System.out.println("\t" + teamOne.getTeamName() + " size: " + teamOne.getMembers().size());
-            System.out.println("\t" + teamTwo.getTeamName() + " size: " + teamTwo.getMembers().size());
-            for (int j = 0; j < teamOneMembers.size() && j < teamTwoMembers.size(); j++) {
-                participantSummonerIds.add(teamOneMembers.get(j).getEncryptedSummonerId());
-                participantSummonerIds.add(teamTwoMembers.get(j).getEncryptedSummonerId());
-            }
-            System.out.println("Participant Summoner IDs Size: " + participantSummonerIds.size());
-            TournamentCodeParameters tournamentCodeParameters = new TournamentCodeParameters(participantSummonerIds, this.tournamentConfig);
-            String tournamentCodeResponse = riotGamesAPI.getTournamentCodes(this.tournamentId, 1, tournamentCodeParameters);
-
-            if (tournamentCodeResponse.contains("enoughPlayers") &&
-                tournamentCodeResponse.contains("was false") &&
-                participantSummonerIds.size() >= (tournamentCodeParameters.getTeamSize() * 2)) {
-                System.out.println(participantSummonerIds);
-                tournamentCodeResponse = riotGamesAPI.getTournamentCodes(this.tournamentId, 1, tournamentCodeParameters);
-            }
-
-            String[] tournamentCodes = new Gson().fromJson(tournamentCodeResponse, String[].class);
-
-            Match match = new Match(this.topRow.get(i), this.bottomRow.get(i), tournamentCodes[0]);
+            Match match = new Match(teamOne, teamTwo);
             matches.add(match);
         }
 
 
-        for (Match match : matches) {
-            System.out.println("Match Tournament Code: " + match.getTournamentCode());
-        }
-
-        return matches;
+        Round round = new Round(matches, roundNum);
+        Logger.log("Successfully created round " + round.getRoundNum(), Level.INFO);
+        return round;
     }
 
     /**

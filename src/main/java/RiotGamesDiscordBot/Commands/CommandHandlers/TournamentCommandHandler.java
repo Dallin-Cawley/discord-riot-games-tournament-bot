@@ -1,14 +1,12 @@
 package RiotGamesDiscordBot.Commands.CommandHandlers;
 
+import RiotGamesDiscordBot.EventHandling.InputEventManager;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Region;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
+import RiotGamesDiscordBot.Tournament.*;
 import RiotGamesDiscordBot.Tournament.RoundRobin.RoundRobinTournament;
-import RiotGamesDiscordBot.Tournament.Team;
-import RiotGamesDiscordBot.Tournament.Tournament;
-import RiotGamesDiscordBot.Tournament.TournamentConfig;
-import RiotGamesDiscordBot.Tournament.TournamentType;
 import com.google.gson.Gson;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
@@ -23,12 +21,16 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
-public class TournamentCommandHandler extends CommandHandler{
+public class TournamentCommandHandler extends CommandHandler {
     private final RiotGamesAPI riotAPI;
+    private final InputEventManager eventManager;
+    private final TournamentManager tournamentManager;
 
-    public TournamentCommandHandler(GuildMessageReceivedEvent event, Iterator<String> messageIterator) {
+    public TournamentCommandHandler(GuildMessageReceivedEvent event, Iterator<String> messageIterator, InputEventManager eventManager, TournamentManager tournamentManager) {
         super(event, messageIterator);
         this.riotAPI = new RiotGamesAPI();
+        this.eventManager = eventManager;
+        this.tournamentManager = tournamentManager;
     }
 
     @Override
@@ -65,7 +67,8 @@ public class TournamentCommandHandler extends CommandHandler{
             Tournament tournament;
             switch (tournamentConfig.getTournamentType()) {
                 case ROUND_ROBIN:
-                    tournament = new RoundRobinTournament(providerId, tournamentId, tournamentConfig);
+                    tournament = new RoundRobinTournament(providerId, tournamentId, tournamentConfig, this.event, teams, this.eventManager);
+                    this.tournamentManager.registerTournament(tournament);
                     break;
                 case SINGLE_ELIMINATION:
                 default:
@@ -73,7 +76,7 @@ public class TournamentCommandHandler extends CommandHandler{
                     tournament = null;
             }
 
-            tournament.setup(teams);
+            tournament.setup();
         }
         catch (MalformedURLException exception) {
             exception.printStackTrace();

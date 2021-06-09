@@ -72,4 +72,14 @@ public class SummonerInfo  {
     public void setRankedInfo(ArrayList<RankedInfo> rankedInfo) {
         this.rankedInfo = rankedInfo;
     }
+
+
+    @Override
+    public boolean equals(Object object) {
+        if (object instanceof SummonerInfo) {
+            return ((SummonerInfo) object).getSummonerName().equals(this.summonerName);
+        }
+
+        return false;
+    }
 }

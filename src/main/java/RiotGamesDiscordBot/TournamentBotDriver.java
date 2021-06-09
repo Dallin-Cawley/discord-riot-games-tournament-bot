@@ -1,6 +1,7 @@
 package RiotGamesDiscordBot;
 
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
+import RiotGamesDiscordBot.Tournament.TournamentManager;
 import com.google.gson.Gson;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -16,6 +17,8 @@ public class TournamentBotDriver {
 
     @Resource(name = "textChannels")
     private List<TextChannel> textChannels;
+
+    private final TournamentManager tournamentManager = new TournamentManager();
 
 
     @PostMapping(value = "/sendMessage", params = {"message"})

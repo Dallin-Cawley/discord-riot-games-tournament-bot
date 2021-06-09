@@ -3,7 +3,9 @@ package RiotGamesDiscordBot.Commands;
 import RiotGamesDiscordBot.Commands.CommandHandlers.CommandHandler;
 import RiotGamesDiscordBot.Commands.CommandHandlers.SummonerInfoCommandHandler;
 import RiotGamesDiscordBot.Commands.CommandHandlers.TournamentCommandHandler;
+import RiotGamesDiscordBot.EventHandling.InputEventManager;
 import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.BracketManager;
+import RiotGamesDiscordBot.Tournament.TournamentManager;
 import com.google.gson.Gson;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.*;
@@ -17,10 +19,14 @@ public class DiscordBotCommands extends ListenerAdapter {
     private final Gson gson;
     private BracketManager bracketManager;
     private final JDA discordAPI;
+    private final InputEventManager inputEventManager;
+    private final TournamentManager tournamentManager;
 
-    public DiscordBotCommands(JDA discordAPI) {
+    public DiscordBotCommands(JDA discordAPI, TournamentManager tournamentManager) {
         this.gson = new Gson();
         this.discordAPI = discordAPI;
+        this.tournamentManager = tournamentManager;
+        this.inputEventManager = new InputEventManager(this.tournamentManager);
     }
 
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
@@ -29,22 +35,33 @@ public class DiscordBotCommands extends ListenerAdapter {
         String command = messageIterator.next();
         //League of Legends command
         if (command.equals("~lol")) {
-            CommandHandler commandHandler = null;
+            CommandHandler commandHandler;
             if (messageIterator.hasNext()) {
                 String arg2 = messageIterator.next();
                 switch (arg2) {
                     //Summoner Info
                     case "-si":
                         commandHandler = new SummonerInfoCommandHandler(event, messageIterator);
+                        commandHandler.handle();
                         break;
                     //Tournament Start
                     case "-t":
+                        if (messageIterator.hasNext()) {
+                            if (messageIterator.next().equals("--rectify")) {
+                                this.inputEventManager.handleEvent(messageIterator);
+                                break;
+                            }
+                        }
+                        else {
+                            commandHandler = new TournamentCommandHandler(event, messageIterator, this.inputEventManager, this.tournamentManager);
+                            commandHandler.handle();
+                        }
+                        break;
                     default:
-                        commandHandler = new TournamentCommandHandler(event, messageIterator);
+                        commandHandler = new TournamentCommandHandler(event, messageIterator, this.inputEventManager, this.tournamentManager);
+                        commandHandler.handle();
+
                 }
-
-                commandHandler.handle();
-
             } else {
                 event.getChannel().sendMessage("Please provide a command.").queue();
             }

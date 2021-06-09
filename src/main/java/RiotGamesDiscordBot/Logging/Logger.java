@@ -1,7 +1,5 @@
 package RiotGamesDiscordBot.Logging;
 
-import org.springframework.format.annotation.DateTimeFormat;
-
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;

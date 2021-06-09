@@ -1,6 +1,7 @@
 package RiotGamesDiscordBot;
 
 import RiotGamesDiscordBot.Commands.DiscordBotCommands;
+import RiotGamesDiscordBot.Tournament.TournamentManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
@@ -17,6 +18,7 @@ import java.util.List;
 @SpringBootApplication
 public class TournamentBotApplication {
     private JDA discordAPI;
+    private final TournamentManager tournamentManager = new TournamentManager();
 
     public static void main(String[] args) {
         SpringApplication.run(TournamentBotApplication.class, args);
@@ -36,7 +38,7 @@ public class TournamentBotApplication {
         this.discordAPI = builder.build();
         this.discordAPI.awaitReady();
 
-        this.discordAPI.addEventListener(new DiscordBotCommands(this.discordAPI));
+        this.discordAPI.addEventListener(new DiscordBotCommands(this.discordAPI, this.tournamentManager));
 
         return this.discordAPI;
     }

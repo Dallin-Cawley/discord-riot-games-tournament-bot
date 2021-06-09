@@ -1,11 +1,15 @@
 package RiotGamesDiscordBot.Tournament;
 
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 
-public class Team {
+public class Team implements Iterable<SummonerInfo>{
     private final List<SummonerInfo> members;
     private  final String teamName;
 
@@ -52,6 +56,16 @@ public class Team {
         return teamName;
     }
 
+    public boolean containsMember(String summonerID) {
+        for (SummonerInfo summonerInfo : this.members) {
+            if (summonerInfo.getEncryptedSummonerId().equals(summonerID)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -62,5 +76,31 @@ public class Team {
         }
 
         return builder.toString();
+    }
+
+    @Override
+    public boolean equals(Object team) {
+        if (team instanceof Team) {
+            Team compare = (Team) team;
+            return compare.getTeamName().equals(this.teamName);
+        }
+
+        return false;
+    }
+
+    @NotNull
+    @Override
+    public Iterator<SummonerInfo> iterator() {
+        return this.members.iterator();
+    }
+
+    @Override
+    public void forEach(Consumer<? super SummonerInfo> action) {
+        this.members.forEach(action);
+    }
+
+    @Override
+    public Spliterator<SummonerInfo> spliterator() {
+        return this.members.spliterator();
     }
 }

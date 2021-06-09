@@ -20,7 +20,6 @@ public class TournamentCodeParameters {
     private final SpectatorType spectatorType;
 
     public TournamentCodeParameters(List<String> allowedSummonerIds, TournamentConfig tournamentConfig) {
-        System.out.println("Tournament Code Parameters list size: " + allowedSummonerIds.size());
         this.teamSize = tournamentConfig.getTeamSize();
         this.pickType = tournamentConfig.getPickType();
         this.mapType = tournamentConfig.getMapType();
@@ -29,7 +28,6 @@ public class TournamentCodeParameters {
 
         this.allowedSummonerIds = new ArrayList<>();
         this.allowedSummonerIds.addAll(allowedSummonerIds);
-        System.out.println("Tournament Code Parameters size: " + this.allowedSummonerIds.size());
     }
 
     public double getTeamSize() {

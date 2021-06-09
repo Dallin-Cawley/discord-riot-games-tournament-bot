@@ -2,6 +2,7 @@ package RiotGamesDiscordBot.Commands.CommandHandlers;
 
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.RankedInfo;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
+import RiotGamesDiscordBot.RiotGamesAPI.EmbeddedMessages.EmbeddedMessageBuilder;
 import RiotGamesDiscordBot.RiotGamesAPI.EmbeddedMessages.SummonerInfoEmbeddedMessageBuilder;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
 import com.google.gson.Gson;
@@ -40,9 +41,9 @@ public class SummonerInfoCommandHandler extends CommandHandler {
             summonerInfo.setRankedInfo(rankedInfo);
 
             //Create the Embedded Message
-            SummonerInfoEmbeddedMessageBuilder summonerInfoEmbeddedMessageBuilder = new SummonerInfoEmbeddedMessageBuilder(summonerInfo);
+            EmbeddedMessageBuilder summonerInfoEmbeddedMessageBuilder = new SummonerInfoEmbeddedMessageBuilder(summonerInfo);
 
-            event.getChannel().sendMessage(summonerInfoEmbeddedMessageBuilder.buildEmbeddedMessage()).queue();
+            event.getChannel().sendMessage(summonerInfoEmbeddedMessageBuilder.buildMessageEmbed()).queue();
         }
         catch (IOException exception) {
             exception.printStackTrace();

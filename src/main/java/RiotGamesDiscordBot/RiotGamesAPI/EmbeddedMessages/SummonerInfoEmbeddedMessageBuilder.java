@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SummonerInfoEmbeddedMessageBuilder extends EmbeddedMessageBuilder {
+    protected static final String DATA_DRAGON_BASE_URL = "http://ddragon.leagueoflegends.com/cdn/10.20.1/";
+
     private static final String PROFILE_ICON_BASE_URL = DATA_DRAGON_BASE_URL + "img/profileicon/";
     private static final String OP_GG_BASE_URL = "https://na.op.gg/summoner/userName=";
 
@@ -56,11 +58,6 @@ public class SummonerInfoEmbeddedMessageBuilder extends EmbeddedMessageBuilder {
         this.fields = new ArrayList<>();
     }
 
-    public MessageEmbed buildEmbeddedMessage() {
-        return new MessageEmbed(this.url, this.title, this.description, this.type, this.timeStamp, this.color,
-                this.thumbnail, this.siteProvider, this.authorInfo, this.videoInfo, this.footer, this.image, this.fields);
-    }
-
     private ArrayList<MessageEmbed.Field> formatFields() {
         ArrayList<MessageEmbed.Field> fields = new ArrayList<>();
 
@@ -84,4 +81,9 @@ public class SummonerInfoEmbeddedMessageBuilder extends EmbeddedMessageBuilder {
     }
 
 
+    @Override
+    public MessageEmbed buildMessageEmbed() {
+        return new MessageEmbed(this.url, this.title, this.description, this.type, this.timeStamp, this.color,
+                this.thumbnail, this.siteProvider, this.authorInfo, this.videoInfo, this.footer, this.image, this.fields);
+    }
 }

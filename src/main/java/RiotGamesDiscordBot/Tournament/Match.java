@@ -1,30 +1,57 @@
 package RiotGamesDiscordBot.Tournament;
 
-import java.util.List;
+import RiotGamesDiscordBot.Logging.ConsoleColors;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
-public class Match {
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Spliterator;
+import java.util.function.Consumer;
+
+public class Match implements Iterable<Team> {
     private final Team teamOne;
     private final Team teamTwo;
-    private final String tournamentCode;
+    private String tournamentCode;
 
     private Team winner;
     private Team loser;
 
-    public Match(Team teamOne, Team teamTwo, String tournamentCode) {
+    private boolean isDone;
+
+    public Match(Team teamOne, Team teamTwo) {
         this.teamOne = teamOne;
         this.teamTwo = teamTwo;
-        this.tournamentCode = tournamentCode;
 
         this.winner = null;
         this.loser = null;
+        this.isDone = false;
+    }
+
+    public boolean isDone() {
+        return isDone;
     }
 
     public void addWinner(Team winner) {
         this.winner = winner;
+
+        if (this.loser != null) {
+            this.isDone = true;
+        }
     }
 
     public void addLoser(Team loser) {
         this.loser = loser;
+
+        if (this.winner != null) {
+            this.isDone = true;
+        }
+    }
+
+    public void setTournamentCode(String tournamentCode) {
+        this.tournamentCode = tournamentCode;
     }
 
     public Team getTeamOne() {
@@ -45,5 +72,82 @@ public class Match {
 
     public Team getWinner() {
         return winner;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        //Determine format String width for Team One
+        int teamOneWidth = this.getFormatStringWidth(this.teamOne);
+        String teamOneFormat = "%-" + teamOneWidth + "s";
+
+        //Determine format String width for Team Two
+        int teamTwoWidth = this.getFormatStringWidth(this.teamTwo);
+        String teamTwoFormat = "%-" + teamTwoWidth + "s";
+
+        List<SummonerInfo> teamOneMembers = this.teamOne.getMembers();
+        List<SummonerInfo> teamTwoMembers = this.teamTwo.getMembers();
+
+        // Title
+        stringBuilder.append(ConsoleColors.GREEN_BOLD).append("Match : ").append(this.tournamentCode).append(ConsoleColors.RESET);
+
+        // Team Names
+        String teamOneName = StringUtils.center(this.teamOne.getTeamName(), teamOneWidth);
+        String teamTwoName = StringUtils.center(this.teamTwo.getTeamName(), teamTwoWidth);
+        stringBuilder.append('\n').append(teamOneName).append('\t').append('\t').append(teamTwoName).append('\n');
+
+        // Team Members
+        for (int i = 0; i < teamOneMembers.size() && i < teamTwoMembers.size(); i++) {
+            String teamOneMember = String.format(teamOneFormat + "\t\t", teamOneMembers.get(i).getSummonerName());
+            String teamTwoMember = String.format(teamTwoFormat + "\n", teamTwoMembers.get(i).getSummonerName());
+            stringBuilder.append(teamOneMember).append(teamTwoMember);
+        }
+
+        return stringBuilder.toString();
+    }
+
+    /**
+     * Determines the greatest length among member names on a Team. The width begins with the Team Name to
+     * accommodate the case where the Team Name is the longest String
+     *
+     * @param team Team - the team needing the longest member summoner name determined
+     * @return int - the largest width among team member summoner names
+     */
+    private int getFormatStringWidth(Team team) {
+        List<SummonerInfo> members = team.getMembers();
+        int width = team.getTeamName().length();
+        for (SummonerInfo summonerInfo : members) {
+            if (summonerInfo.getSummonerName().length() > width) {
+                width = summonerInfo.getSummonerName().length();
+            }
+        }
+
+        return width;
+    }
+
+    @NotNull
+    @Override
+    public Iterator<Team> iterator() {
+        List<Team> teams = new ArrayList<>();
+        teams.add(this.teamOne);
+        teams.add(this.teamTwo);
+        return teams.iterator();
+    }
+
+    @Override
+    public void forEach(Consumer<? super Team> action) {
+        List<Team> teams = new ArrayList<>();
+        teams.add(this.teamOne);
+        teams.add(this.teamTwo);
+        teams.forEach(action);
+    }
+
+    @Override
+    public Spliterator<Team> spliterator() {
+        List<Team> teams = new ArrayList<>();
+        teams.add(this.teamOne);
+        teams.add(this.teamTwo);
+        return teams.spliterator();
     }
 }
