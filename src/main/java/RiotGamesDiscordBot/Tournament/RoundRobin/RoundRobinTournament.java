@@ -7,13 +7,15 @@ import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodePara
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
 import RiotGamesDiscordBot.Tournament.*;
+import RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration.RoundRobinBracketManager;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Events.DuplicateTeamEvent;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Events.MemberOnBothTeamsEvent;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Events.TeamMemberDuplicateEvent;
+import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
 import com.google.gson.Gson;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
-import org.apache.poi.ss.formula.functions.T;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -27,21 +29,30 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
     private Object resumeClassObject;
     private final InputEventManager eventManager;
     private final List<Round> rounds = new ArrayList<>();
+    private final RoundRobinBracketManager bracketManager;
+    private final JDA discordAPI;
+    private final int currentRound;
 
     public RoundRobinTournament(int providerId, long tournamentId, TournamentConfig tournamentConfig, GuildMessageReceivedEvent event, List<Team> teams,
-                                InputEventManager eventManager) {
+                                InputEventManager eventManager, JDA discordAPI) {
         super(tournamentId, providerId, event, teams);
         this.tournamentConfig = tournamentConfig;
         this.suspended = false;
         this.eventManager = eventManager;
+        this.discordAPI = discordAPI;
+        this.bracketManager = new RoundRobinBracketManager(this.discordAPI, event.getChannel());
+        this.currentRound = 1;
     }
 
     public RoundRobinTournament(int providerId, long tournamentId, TournamentConfig tournamentConfig,
-                                TextChannel textChannel, List<Team> teams, InputEventManager eventManager) {
+                                TextChannel textChannel, List<Team> teams, InputEventManager eventManager, JDA discordAPI) {
         super(tournamentId, providerId, textChannel, teams);
         this.tournamentConfig = tournamentConfig;
         this.suspended = false;
         this.eventManager = eventManager;
+        this.discordAPI = discordAPI;
+        this.bracketManager = new RoundRobinBracketManager(this.discordAPI, textChannel);
+        this.currentRound = 1;
     }
 
     /**
@@ -89,9 +100,26 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
     @Override
     public void start() {
         Logger.log("Starting RoundRobin tournament", Level.INFO);
+
+        // Generate Bracket before creating tournament codes
+
+        try {
+            this.bracketManager.generateBracket(this.rounds);
+        }
+        catch (TournamentChannelNotFound exception) {
+            String uuid = UUID.randomUUID().toString();
+            exception.event.setEventId(uuid);
+            exception.event.setSuspendable(this);
+            this.eventManager.registerEvent(uuid, exception.event);
+            this.suspend();
+            return;
+        }
+
+        // Create Tournament Codes
         RiotGamesAPI riotGamesAPI = new RiotGamesAPI();
         Gson gson = new Gson();
         Logger.log("Generating Tournament Codes", Level.INFO);
+
         for (Round round : rounds) {
             Logger.log("Generating tournament codes for Round " + round.getRoundNum(), Level.INFO);
             for (Match match : round) {
@@ -119,6 +147,8 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
 
             Logger.log("Finished generating tournament codes for Round " + round.getRoundNum(), Level.INFO);
         }
+
+        this.bracketManager.sendRoundToChannel(this.currentRound);
     }
 
     /**
@@ -335,9 +365,9 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
         try {
             Class<?> className = Class.forName(currentMethod.getClassName());
             this.resumeClassObject = className.getDeclaredConstructor(int.class, long.class, TournamentConfig.class,
-                    TextChannel.class, List.class, InputEventManager.class)
+                    TextChannel.class, List.class, InputEventManager.class, JDA.class)
                     .newInstance(this.getProviderId(), this.getTournamentId(), this.tournamentConfig,
-                            this.messageChannel, this.teams, this.eventManager);
+                            this.messageChannel, this.teams, this.eventManager, this.discordAPI);
             this.resumeMethod = className.getMethod(currentMethod.getMethodName());
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException exception) {
             exception.printStackTrace();

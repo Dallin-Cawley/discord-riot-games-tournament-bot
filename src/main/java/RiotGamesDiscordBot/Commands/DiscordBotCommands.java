@@ -53,12 +53,12 @@ public class DiscordBotCommands extends ListenerAdapter {
                             }
                         }
                         else {
-                            commandHandler = new TournamentCommandHandler(event, messageIterator, this.inputEventManager, this.tournamentManager);
+                            commandHandler = new TournamentCommandHandler(event, messageIterator, this.inputEventManager, this.tournamentManager, this.discordAPI);
                             commandHandler.handle();
                         }
                         break;
                     default:
-                        commandHandler = new TournamentCommandHandler(event, messageIterator, this.inputEventManager, this.tournamentManager);
+                        commandHandler = new TournamentCommandHandler(event, messageIterator, this.inputEventManager, this.tournamentManager, this.discordAPI);
                         commandHandler.handle();
 
                 }

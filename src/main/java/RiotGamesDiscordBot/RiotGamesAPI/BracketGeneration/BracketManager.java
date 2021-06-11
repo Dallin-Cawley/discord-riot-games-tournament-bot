@@ -3,6 +3,7 @@ package RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
 import RiotGamesDiscordBot.Tournament.Match;
 import RiotGamesDiscordBot.Tournament.Round;
+import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
@@ -27,21 +28,13 @@ public abstract class BracketManager {
     protected final List<MatchImage> matchImages;
 
 
-    public BracketManager(JDA discordAPI) throws IOException {
+    public BracketManager(JDA discordAPI) {
         this.matchImages = new ArrayList<>();
         this.discordAPI = discordAPI;
-        this.imageFile = new File("bracketImage.png");
-
-        //Get the text channel the Tournament Bot will Post the current standings
-        for (TextChannel textChannel : this.discordAPI.getTextChannels()) {
-            if (textChannel.getName().equals("tournament-details")) {
-                this.tournamentChannel = textChannel;
-                break;
-            }
-        }
+        this.imageFile = new File("/resources/bracketImage.png");
     }
 
-    public abstract void generateBracket(List<Round> rounds);
+    public abstract void generateBracket(List<Round> rounds) throws TournamentChannelNotFound;
 
     public abstract void updateBracket(MatchResult matchResult);
 

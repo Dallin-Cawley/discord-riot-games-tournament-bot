@@ -8,6 +8,7 @@ import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
 import RiotGamesDiscordBot.Tournament.*;
 import RiotGamesDiscordBot.Tournament.RoundRobin.RoundRobinTournament;
 import com.google.gson.Gson;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import org.apache.commons.io.FilenameUtils;
@@ -25,12 +26,15 @@ public class TournamentCommandHandler extends CommandHandler {
     private final RiotGamesAPI riotAPI;
     private final InputEventManager eventManager;
     private final TournamentManager tournamentManager;
+    private final JDA discordAPI;
 
-    public TournamentCommandHandler(GuildMessageReceivedEvent event, Iterator<String> messageIterator, InputEventManager eventManager, TournamentManager tournamentManager) {
+    public TournamentCommandHandler(GuildMessageReceivedEvent event, Iterator<String> messageIterator,
+                                    InputEventManager eventManager, TournamentManager tournamentManager, JDA discordAPI) {
         super(event, messageIterator);
         this.riotAPI = new RiotGamesAPI();
         this.eventManager = eventManager;
         this.tournamentManager = tournamentManager;
+        this.discordAPI = discordAPI;
     }
 
     @Override
@@ -67,7 +71,7 @@ public class TournamentCommandHandler extends CommandHandler {
             Tournament tournament;
             switch (tournamentConfig.getTournamentType()) {
                 case ROUND_ROBIN:
-                    tournament = new RoundRobinTournament(providerId, tournamentId, tournamentConfig, this.event, teams, this.eventManager);
+                    tournament = new RoundRobinTournament(providerId, tournamentId, tournamentConfig, this.event, teams, this.eventManager, this.discordAPI);
                     this.tournamentManager.registerTournament(tournament);
                     break;
                 case SINGLE_ELIMINATION:
