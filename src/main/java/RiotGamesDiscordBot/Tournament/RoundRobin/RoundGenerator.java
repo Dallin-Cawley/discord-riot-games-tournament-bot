@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class RoundGenerator {
     private final List<Team> topRow;
@@ -45,7 +46,7 @@ public class RoundGenerator {
             Team teamOne = this.topRow.get(i);
             Team teamTwo = this.bottomRow.get(i);
 
-            Match match = new Match(teamOne, teamTwo);
+            Match match = new Match(teamOne, teamTwo, UUID.randomUUID().toString());
             matches.add(match);
         }
 

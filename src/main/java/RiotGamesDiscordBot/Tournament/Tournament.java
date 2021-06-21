@@ -1,5 +1,6 @@
 package RiotGamesDiscordBot.Tournament;
 
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 
@@ -33,7 +34,7 @@ public abstract class Tournament {
 
     public abstract void start();
 
-    public abstract void updateStandings(Match match);
+    public abstract void advanceTournament(MatchResult matchResult);
 
     public abstract void endTournament();
 

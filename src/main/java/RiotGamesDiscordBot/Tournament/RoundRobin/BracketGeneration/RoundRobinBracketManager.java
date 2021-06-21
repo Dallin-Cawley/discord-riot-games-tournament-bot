@@ -4,16 +4,24 @@ import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.BracketManager;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
+import RiotGamesDiscordBot.Tournament.Match;
 import RiotGamesDiscordBot.Tournament.Round;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
+import RiotGamesDiscordBot.Tournament.Team;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("DuplicatedCode")
 public class RoundRobinBracketManager extends BracketManager  {
     private final TextChannel commandChannel;
     private final List<RoundImage> roundImages;
@@ -51,36 +59,11 @@ public class RoundRobinBracketManager extends BracketManager  {
         }
 
 
-        //TODO: Convert these calculations for the current standings
-        // Round images will go out one round at a time
+        /*##################################################################################################
+         * Create Round Images
+         *#################################################################################################*/
 
         // The amount of round images needed
-        Logger.log("Rounds : " + rounds.size(), Level.INFO);
-        int roundImageNum = rounds.size();
-
-        Logger.log("Number of Round Images : " + roundImageNum, Level.INFO);
-
-        //             Round image is 640px wide   Spacing between images
-        int imageWidth = (roundImageNum * 640) + ((roundImageNum + 1) * 20);
-        Logger.log("Image Width : " + imageWidth, Level.INFO);
-
-        // Allow only 4 rounds per row
-        int roundImageRows = 0;
-        if (roundImageNum % 4 == 0) {
-            roundImageRows = roundImageNum / 4;
-        }
-        else {
-            roundImageRows = (roundImageNum / 4) + 1;
-        }
-        Logger.log("Rows : " + roundImageRows, Level.INFO);
-
-        //              RoundImage is 640px high    Spacing between images
-        int imageHeight = (roundImageRows * 640) + ((roundImageRows + 1) * 20);
-        Logger.log("Image Height : " + imageHeight, Level.INFO);
-
-        Logger.log("Creating master BufferedImage", Level.INFO);
-        this.bracketImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_4BYTE_ABGR);
-        this.bracketGraphics = this.bracketImage.createGraphics();
 
         for (Round round : rounds) {
             Logger.log("Creating RoundImage : " + round.getRoundNum(), Level.INFO);
@@ -93,8 +76,121 @@ public class RoundRobinBracketManager extends BracketManager  {
             }
         }
 
-        Logger.log("Finished Adding Rounds to master image", Level.INFO);
+        Logger.log("Finished creating Round Images", Level.INFO);
 
+        /*#############################################################################################
+         * Create Current Standings Image
+         *############################################################################################*/
+
+        int numTeams = rounds.get(0).getMatchSize() * 2;
+        int imageHeight = ((numTeams + 1) * 200) + ((numTeams + 1) * 40);
+        int imageWidth = 1880;
+        this.bracketImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_4BYTE_ABGR);
+        this.bracketGraphics = this.bracketImage.createGraphics();
+        this.bracketGraphics.setColor(Color.GRAY);
+        this.bracketGraphics.fillRect(0, 0, this.bracketImage.getWidth(), this.bracketImage.getHeight());
+        try {
+            BufferedImage title = ImageIO.read(new File("src/main/resources/Current-Standings-Title.png"));
+            title = this.makeRoundedCorner(title);
+            this.bracketGraphics.drawImage(title, null, 40, 20);
+        }
+        catch (IOException exception) {
+            exception.printStackTrace();
+        }
+
+            Round firstRound = rounds.get(0);
+            int yPos = 240;
+            for (Match match : firstRound) {
+                Team teamOne = match.getTeamOne();
+                try {
+                    BufferedImage teamOneStanding = ImageIO.read(new File("src/main/resources/Team-Standing.png"));
+                    Graphics2D teamStandingGraphics = teamOneStanding.createGraphics();
+
+                    // Write Team One Name
+                    teamStandingGraphics.setFont(new Font("SansSerif", Font.BOLD, 100));
+                    teamStandingGraphics.drawString(teamOne.getTeamName(), 50, 150);
+
+                    // Draw Starting Win Number
+                    teamStandingGraphics.drawString("0", 1325, 150);
+
+                    // Draw Starting Loss Number
+                    teamStandingGraphics.drawString("0", 1675, 150);
+                    teamStandingGraphics.dispose();
+
+                    teamOneStanding = this.makeRoundedCorner(teamOneStanding);
+
+                    this.bracketGraphics.drawImage(teamOneStanding, null, 40, yPos);
+                }
+                catch (IOException exception) {
+                    exception.printStackTrace();
+                }
+
+                yPos += 240;
+
+                // Write Team Two Name
+                Team teamTwo = match.getTeamTwo();
+                try {
+                    BufferedImage teamTwoStanding = ImageIO.read(new File("src/main/resources/Team-Standing.png"));
+                    Graphics2D teamStandingGraphics = teamTwoStanding.createGraphics();
+
+                    // Write Team Two Name
+                    teamStandingGraphics.setFont(new Font("SansSerif", Font.BOLD, 100));
+                    teamStandingGraphics.drawString(teamTwo.getTeamName(), 50, 150);
+
+                    // Draw Starting Win Number
+                    teamStandingGraphics.drawString("0", 1325, 150);
+
+                    // Draw Starting Loss Number
+                    teamStandingGraphics.drawString("0", 1675, 150);
+                    teamStandingGraphics.dispose();
+
+                    teamTwoStanding = this.makeRoundedCorner(teamTwoStanding);
+
+                    this.bracketGraphics.drawImage(teamTwoStanding, null, 40, yPos);
+                }
+                catch (IOException exception) {
+                    exception.printStackTrace();
+                }
+
+                yPos += 240;
+        }
+
+        this.bracketGraphics.dispose();
+
+        try {
+            ImageIO.write(this.bracketImage, "png", new File("src/main/resources/currentStandings/current_standing.png"));
+        }
+        catch (IOException exception) {
+            exception.printStackTrace();
+        }
+
+    }
+
+    private BufferedImage makeRoundedCorner(BufferedImage image) {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage output = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2 = output.createGraphics();
+
+        // This is what we want, but it only does hard-clipping, i.e. aliasing
+        // g2.setClip(new RoundRectangle2D ...)
+
+        // so instead fake soft-clipping by first drawing the desired clip shape
+        // in fully opaque white with antialiasing enabled...
+        g2.setComposite(AlphaComposite.Src);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(Color.WHITE);
+        g2.fill(new RoundRectangle2D.Float(0, 0, w, h, 20, 20));
+
+        // ... then compositing the image on top,
+        // using the white shape from above as alpha source
+        g2.setComposite(AlphaComposite.SrcAtop);
+        g2.drawImage(image, 0, 0, null);
+
+        g2.dispose();
+
+        return output;
     }
 
     @Override
@@ -105,5 +201,9 @@ public class RoundRobinBracketManager extends BracketManager  {
     public void sendRoundToChannel(int roundNum) {
         RoundImage round = this.roundImages.get(roundNum - 1);
         this.tournamentChannel.sendMessage("Round " + round.getRoundNum()).addFile(round.generateImage()).queue();
+    }
+
+    public void sendCurrentStandings() {
+        this.tournamentChannel.sendMessage("Current Standings").addFile(new File("src/main/resources/currentStandings/current_standing.png")).queue();
     }
 }

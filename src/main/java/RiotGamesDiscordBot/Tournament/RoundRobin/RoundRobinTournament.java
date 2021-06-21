@@ -3,8 +3,10 @@ package RiotGamesDiscordBot.Tournament.RoundRobin;
 import RiotGamesDiscordBot.EventHandling.InputEventManager;
 import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.TournamentCodeMetaData;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
 import RiotGamesDiscordBot.Tournament.*;
 import RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration.RoundRobinBracketManager;
@@ -17,6 +19,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -136,19 +139,25 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
                         summonerIds.add(summonerInfo.getEncryptedSummonerId());
                     }
                 }
-                TournamentCodeParameters parameters = new TournamentCodeParameters(summonerIds, this.tournamentConfig);
-                String[] tournamentCodes = gson.fromJson(riotGamesAPI.getTournamentCodes(this.getTournamentId(),
-                        1, parameters), String[].class);
-
-                Logger.log("\tGenerated tournament code for " +
-                        match.getTeamOne().getTeamName() + " vs " + match.getTeamTwo().getTeamName(), Level.INFO);
-                match.setTournamentCode(tournamentCodes[0]);
+                TournamentCodeMetaData metaData = new TournamentCodeMetaData(this.getTournamentId(), match.getMatchId());
+                TournamentCodeParameters parameters = new TournamentCodeParameters(summonerIds, this.tournamentConfig, metaData);
+                try {
+                    String[] tournamentCodes = gson.fromJson(riotGamesAPI.getTournamentCodes(this.getTournamentId(),
+                            1, parameters), String[].class);
+                    Logger.log("\tGenerated tournament code for " +
+                            match.getTeamOne().getTeamName() + " vs " + match.getTeamTwo().getTeamName(), Level.INFO);
+                    match.setTournamentCode(tournamentCodes[0]);
+                }
+                catch (IOException exception) {
+                    exception.printStackTrace();
+                }
             }
 
             Logger.log("Finished generating tournament codes for Round " + round.getRoundNum(), Level.INFO);
         }
 
         this.bracketManager.sendRoundToChannel(this.currentRound);
+        this.bracketManager.sendCurrentStandings();
     }
 
     /**
@@ -347,8 +356,8 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
     }
 
     @Override
-    public void updateStandings(Match match) {
-
+    public void advanceTournament(MatchResult matchResult) {
+        System.out.println("Match Result: " + matchResult);
     }
 
     @Override

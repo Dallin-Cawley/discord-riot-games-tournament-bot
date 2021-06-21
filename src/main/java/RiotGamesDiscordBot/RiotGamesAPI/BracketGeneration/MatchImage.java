@@ -72,12 +72,12 @@ public class MatchImage {
 
     public void updateImage() {
 
-        try {
-            this.manager.updateBrackets(this);
-        }
-        catch(IOException exception) {
-            exception.printStackTrace();
-        }
+//        try {
+//            this.manager.updateBrackets(this);
+//        }
+//        catch(IOException exception) {
+//            exception.printStackTrace();
+//        }
     }
 
     public BufferedImage getMatchImage() {

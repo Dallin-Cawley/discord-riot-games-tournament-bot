@@ -3,7 +3,9 @@ package RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MapType;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.PickType;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SpectatorType;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.TournamentCodeMetaData;
 import RiotGamesDiscordBot.Tournament.TournamentConfig;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,13 +21,16 @@ public class TournamentCodeParameters {
     private final MapType mapType;
     private final SpectatorType spectatorType;
 
-    public TournamentCodeParameters(List<String> allowedSummonerIds, TournamentConfig tournamentConfig) {
+    public TournamentCodeParameters(List<String> allowedSummonerIds, TournamentConfig tournamentConfig, TournamentCodeMetaData metaData) {
         this.teamSize = tournamentConfig.getTeamSize();
         this.pickType = tournamentConfig.getPickType();
         this.mapType = tournamentConfig.getMapType();
         this.spectatorType = tournamentConfig.getSpectatorType();
-        this.metadata = tournamentConfig.getMetadata();
+        this.metadata = new Gson().toJson(metaData);
 
+
+
+        System.out.println("Meta Data: " + this.metadata);
         this.allowedSummonerIds = new ArrayList<>();
         this.allowedSummonerIds.addAll(allowedSummonerIds);
     }

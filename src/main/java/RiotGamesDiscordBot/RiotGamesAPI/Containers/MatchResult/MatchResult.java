@@ -38,10 +38,12 @@ public class MatchResult {
     @SerializedName("region")
     String region;
 
+    public MetaData getMetaData() {
+        return metaData;
+    }
 
     @Override
     public String toString() {
-
         return this.metaData.title + " : " + this.region + " - " + this.gameMode;
     }
 }

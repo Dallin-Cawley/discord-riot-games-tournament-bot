@@ -12,13 +12,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
+import javax.annotation.Resource;
 import javax.security.auth.login.LoginException;
 import java.util.List;
 
 @SpringBootApplication
 public class TournamentBotApplication {
     private JDA discordAPI;
-    private final TournamentManager tournamentManager = new TournamentManager();
+
+    @Resource(name = "tournamentManager")
+    private TournamentManager tournamentManager;
 
     public static void main(String[] args) {
         SpringApplication.run(TournamentBotApplication.class, args);
@@ -46,6 +49,11 @@ public class TournamentBotApplication {
     @Bean(name = "textChannels")
     public List<TextChannel> getTextChannels() {
         return this.discordAPI.getTextChannels();
+    }
+
+    @Bean(name = "tournamentManager")
+    public TournamentManager getTournamentManager() {
+        return new TournamentManager();
     }
 }
 

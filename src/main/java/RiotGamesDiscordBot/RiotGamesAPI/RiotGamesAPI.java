@@ -25,7 +25,7 @@ public class RiotGamesAPI {
     private static final String REGIONAL_BASE_URL = "https://americas.api.riotgames.com/";
 
 
-    public int getProviderID(URL callBackURL, Region region) {
+    public int getProviderID(URL callBackURL, Region region) throws IOException {
         try {
             URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/providers");
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
@@ -41,7 +41,7 @@ public class RiotGamesAPI {
 
     }
 
-    public int getTournamentID(int providerID, String tournamentName) {
+    public int getTournamentID(int providerID, String tournamentName) throws IOException {
         try {
             URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/tournaments");
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
@@ -56,7 +56,7 @@ public class RiotGamesAPI {
         return -1;
     }
 
-    public String getTournamentCodes(long tournamentID, int tournamentCodeNum, TournamentCodeParameters tournamentCodeParameters) {
+    public String getTournamentCodes(long tournamentID, int tournamentCodeNum, TournamentCodeParameters tournamentCodeParameters) throws IOException {
         try {
             URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/codes?count=" + tournamentCodeNum + "&tournamentId=" + tournamentID);
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
@@ -102,26 +102,24 @@ public class RiotGamesAPI {
 
 
 
-    private HttpResponseContents request(HttpRequestContents contents) {
+    private HttpResponseContents request(HttpRequestContents contents) throws IOException {
         CloseableHttpClient client = HttpClients.createDefault();
         HttpUriRequest request = getRequest(contents);
         request.addHeader("X-Riot-Token", System.getenv("RIOT_GAMES_API_KEY"));
         RiotAPIResponseHandler responseHandler = new RiotAPIResponseHandler();
 
-        try {
-            while(responseHandler.canAttempt()) {
-                CloseableHttpResponse response = client.execute(request);
-                responseHandler.handleResponse(response);
-                responseHandler.handleEntity(response.getEntity());
-            }
-
-            if (!responseHandler.isSuccessful()) {
-                RiotAPIError riotAPIError = new Gson().fromJson(new String(responseHandler.getResponseBytes(), StandardCharsets.UTF_8), RiotAPIError.class);
-                Logger.log(contents.getUri() + "\n\t" + riotAPIError.toString(), Level.WARNING);
-            }
+        while (responseHandler.canAttempt()) {
+            CloseableHttpResponse response = client.execute(request);
+            responseHandler.handleResponse(response);
+            responseHandler.handleEntity(response.getEntity());
         }
-        catch (IOException exception) {
-            exception.printStackTrace();
+
+        if (!responseHandler.isSuccessful()) {
+            RiotAPIError riotAPIError = new Gson().fromJson(new String(responseHandler.getResponseBytes(), StandardCharsets.UTF_8), RiotAPIError.class);
+            if (riotAPIError.getStatusLine().statusCode == 404) {
+                throw new SummonerNotFoundException(contents.getRequestBody());
+            }
+            Logger.log(contents.getUri() + "\n\t" + riotAPIError.toString(), Level.WARNING);
         }
 
         return new HttpResponseContents(responseHandler.getResponseBytes());

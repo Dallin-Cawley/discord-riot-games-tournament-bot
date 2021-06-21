@@ -29,7 +29,8 @@ public class TournamentBotDriver {
     @Resource(name = "textChannels")
     private List<TextChannel> textChannels;
 
-    private final TournamentManager tournamentManager = new TournamentManager();
+    @Resource(name = "tournamentManager")
+    private TournamentManager tournamentManager;
 
 
     @PostMapping(value = "/sendMessage", params = {"message"})
@@ -43,9 +44,10 @@ public class TournamentBotDriver {
     @PostMapping(value = "/matchResult")
     public @ResponseBody
     String matchResult(@RequestBody String matchResultJson) {
+        System.out.println("MatchResultJson: " + matchResultJson);
         MatchResult matchResult = new Gson().fromJson(matchResultJson, MatchResult.class);
 
-
+        tournamentManager.advanceTournament(matchResult);
         return "Done";
     }
 

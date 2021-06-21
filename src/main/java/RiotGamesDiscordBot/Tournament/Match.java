@@ -15,19 +15,21 @@ public class Match implements Iterable<Team> {
     private final Team teamOne;
     private final Team teamTwo;
     private String tournamentCode;
+    private String matchId;
 
     private Team winner;
     private Team loser;
 
     private boolean isDone;
 
-    public Match(Team teamOne, Team teamTwo) {
+    public Match(Team teamOne, Team teamTwo, String matchId) {
         this.teamOne = teamOne;
         this.teamTwo = teamTwo;
 
         this.winner = null;
         this.loser = null;
         this.isDone = false;
+        this.matchId = matchId;
     }
 
     public boolean isDone() {
@@ -72,6 +74,19 @@ public class Match implements Iterable<Team> {
 
     public Team getWinner() {
         return winner;
+    }
+
+    public String getMatchId() {
+        return matchId;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object instanceof Match) {
+            return this.matchId.equals(((Match) object).getMatchId());
+        }
+
+        return false;
     }
 
     @Override

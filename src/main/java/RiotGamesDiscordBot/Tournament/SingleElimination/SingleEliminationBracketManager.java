@@ -53,12 +53,12 @@ public class SingleEliminationBracketManager extends BracketManager {
             temp.setTeamTwo(match.getTeamTwo().getTeamName(), this.bracketGraphics);
         }
 
-        try {
-            sendBracketToChannel();
-        }
-        catch (IOException exception) {
-            exception.printStackTrace();
-        }
+//        try {
+//            sendBracketToChannel();
+//        }
+//        catch (IOException exception) {
+//            exception.printStackTrace();
+//        }
 
         int x = 0;
         int y = 0;

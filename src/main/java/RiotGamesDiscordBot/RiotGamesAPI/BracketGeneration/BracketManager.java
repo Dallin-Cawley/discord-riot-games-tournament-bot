@@ -37,32 +37,4 @@ public abstract class BracketManager {
     public abstract void generateBracket(List<Round> rounds) throws TournamentChannelNotFound;
 
     public abstract void updateBracket(MatchResult matchResult);
-
-    public void updateBrackets(MatchImage matchImage) throws IOException {
-        //Redraw match image section in parent image
-        this.bracketGraphics.drawImage(matchImage.getMatchImage(), null, matchImage.getPositionX(), matchImage.getPositionY());
-        sendBracketToChannel();
-    }
-
-    public void sendBracketToChannel() throws IOException {
-        //Delete all the pinned messages
-        List<Message> pinnedMessages = this.tournamentChannel.retrievePinnedMessages().complete();
-        if (!pinnedMessages.isEmpty()) {
-            for (Message message : pinnedMessages) {
-                this.tournamentChannel.deleteMessageById(message.getId()).queue();
-            }
-        }
-
-        //Update parent image
-        writeFile();
-
-        //Send the Bracket image
-        this.tournamentChannel.sendMessage("Current Standings.").addFile(this.imageFile).queue();
-    }
-
-    private void writeFile() throws IOException {
-        ImageIO.write(this.bracketImage, "png", this.imageFile);
-    }
-
-
 }

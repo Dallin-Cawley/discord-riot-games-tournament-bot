@@ -1,10 +1,11 @@
 package RiotGamesDiscordBot.Commands.CommandHandlers;
 
 import RiotGamesDiscordBot.EventHandling.InputEventManager;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Region;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
+import RiotGamesDiscordBot.RiotGamesAPI.Event.SummonerNotFoundEvent;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
+import RiotGamesDiscordBot.RiotGamesAPI.SummonerNotFoundException;
 import RiotGamesDiscordBot.Tournament.*;
 import RiotGamesDiscordBot.Tournament.RoundRobin.RoundRobinTournament;
 import com.google.gson.Gson;
@@ -18,7 +19,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
@@ -27,6 +27,7 @@ public class TournamentCommandHandler extends CommandHandler {
     private final InputEventManager eventManager;
     private final TournamentManager tournamentManager;
     private final JDA discordAPI;
+    private boolean createTourney;
 
     public TournamentCommandHandler(GuildMessageReceivedEvent event, Iterator<String> messageIterator,
                                     InputEventManager eventManager, TournamentManager tournamentManager, JDA discordAPI) {
@@ -35,6 +36,7 @@ public class TournamentCommandHandler extends CommandHandler {
         this.eventManager = eventManager;
         this.tournamentManager = tournamentManager;
         this.discordAPI = discordAPI;
+        this.createTourney = true;
     }
 
     @Override
@@ -72,7 +74,6 @@ public class TournamentCommandHandler extends CommandHandler {
             switch (tournamentConfig.getTournamentType()) {
                 case ROUND_ROBIN:
                     tournament = new RoundRobinTournament(providerId, tournamentId, tournamentConfig, this.event, teams, this.eventManager, this.discordAPI);
-                    this.tournamentManager.registerTournament(tournament);
                     break;
                 case SINGLE_ELIMINATION:
                 default:
@@ -80,9 +81,13 @@ public class TournamentCommandHandler extends CommandHandler {
                     tournament = null;
             }
 
-            tournament.setup();
+            if (this.createTourney) {
+                System.out.println("Registering tournament : " + tournament.getTournamentId());
+                this.tournamentManager.registerTournament(tournament);
+                tournament.setup();
+            }
         }
-        catch (MalformedURLException exception) {
+        catch (IOException exception) {
             exception.printStackTrace();
         }
 
@@ -110,8 +115,18 @@ public class TournamentCommandHandler extends CommandHandler {
                     if (teamMember.isEmpty()) {
                         break;
                     }
-                    SummonerInfo summonerInfo = gson.fromJson(riotAPI.getSummonerInfoByName(teamMember), SummonerInfo.class);
-                    teams.get(colIndex).addMember(summonerInfo);
+
+                    try {
+                        SummonerInfo summonerInfo = gson.fromJson(riotAPI.getSummonerInfoByName(teamMember), SummonerInfo.class);
+                        teams.get(colIndex).addMember(summonerInfo);
+                    }
+                    catch (IOException exception) {
+                        if (exception instanceof SummonerNotFoundException) {
+                            SummonerNotFoundEvent event = new SummonerNotFoundEvent(this.event.getChannel(), teamMember);
+                            event.sendErrorMessage();
+                            this.createTourney = false;
+                        }
+                    }
                 }
             }
 

@@ -66,37 +66,5 @@ public class DiscordBotCommands extends ListenerAdapter {
                 event.getChannel().sendMessage("Please provide a command.").queue();
             }
         }
-        //Any other message
-        else {
-            String channelName = event.getChannel().getName();
-
-            //The tournament update channel
-            if (channelName.equals("tournament-details")) {
-                TextChannel channel = event.getChannel();
-
-                //Expected to be the bracket image
-                String recentMessageId = channel.getLatestMessageId();
-                try {
-                    Message recentMessage = channel.retrieveMessageById(recentMessageId).complete();
-                    MessageType messageType = recentMessage.getType();
-
-                    //Delete all non-pinned messages in channel
-                    if (!messageType.equals(MessageType.CHANNEL_PINNED_ADD)) {
-                        for (Message pinnedMessage : channel.retrievePinnedMessages().complete()) {
-                            channel.deleteMessageById(pinnedMessage.getId()).queue();
-                        }
-
-                        channel.pinMessageById(recentMessageId).queue();
-                    }
-                    else {
-                        channel.deleteMessageById(recentMessageId).queue();
-                    }
-                }
-                catch (NullPointerException exception) {
-                    System.out.println("Encountered a NullPointerException");
-                    exception.printStackTrace();
-                }
-            }
-        }
     }
 }

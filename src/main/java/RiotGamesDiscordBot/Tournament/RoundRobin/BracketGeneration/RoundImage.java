@@ -1,30 +1,158 @@
 package RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration;
 
+import RiotGamesDiscordBot.Tournament.Match;
 import RiotGamesDiscordBot.Tournament.Round;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 public class RoundImage {
+    private static class MatchImage {
+        private final List<Match> matches;
+        private final File roundImageFile;
+
+        private BufferedImage image;
+
+        protected MatchImage(List<Match> matches, File roundImageFile) throws IOException {
+            this.matches = matches;
+            this.roundImageFile = roundImageFile;
+            this.image = ImageIO.read(Objects.requireNonNull(getClass().getClassLoader().getResource("MatchImage.png")));
+        }
+
+        protected BufferedImage generateImage() {
+            Graphics2D graphics = this.image.createGraphics();
+            graphics.setFont(new Font("SansSerif", Font.BOLD, 48));
+            graphics.setColor(Color.BLACK);
+
+            // Draw the Matches
+            int yPos = 175;
+            for (Match match : this.matches) {
+                graphics.drawString(match.getTeamOne().getTeamName(), 125, yPos);
+                graphics.drawString(match.getTeamTwo().getTeamName(), 1150, yPos);
+                yPos += 147;
+            }
+
+            try {
+                this.makeRoundedCorner();
+                ImageIO.write(this.image, "png", this.roundImageFile);
+            }
+            catch (IOException exception) {
+                exception.printStackTrace();
+            }
+
+            graphics.dispose();
+            return this.image;
+        }
+
+        private void makeRoundedCorner() {
+            int w = this.image.getWidth();
+            int h = this.image.getHeight();
+            BufferedImage output = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+            Graphics2D g2 = output.createGraphics();
+
+            // This is what we want, but it only does hard-clipping, i.e. aliasing
+            // g2.setClip(new RoundRectangle2D ...)
+
+            // so instead fake soft-clipping by first drawing the desired clip shape
+            // in fully opaque white with antialiasing enabled...
+            g2.setComposite(AlphaComposite.Src);
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(Color.WHITE);
+            g2.fill(new RoundRectangle2D.Float(0, 0, w, h, 20, 20));
+
+            // ... then compositing the image on top,
+            // using the white shape from above as alpha source
+            g2.setComposite(AlphaComposite.SrcAtop);
+            g2.drawImage(this.image, 0, 0, null);
+
+            g2.dispose();
+
+            this.image = output;
+        }
+
+
+
+    }
+
     private final Round round;
     private final BufferedImage image;
-    private final File imageFile;
+    private final BufferedImage roundImage;
+    private final int roundImageNum;
+    private final List<File> imageFiles;
+    private final File masterImage;
+    private final List<MatchImage> roundImages;
 
     public RoundImage(Round round) throws IOException {
         this.round = round;
-        this.image = ImageIO.read(Objects.requireNonNull(getClass().getClassLoader().getResource("Round.png")));
-        this.imageFile = new File("src/main/resources/roundImages/round" + round.getRoundNum() + ".png");
+        this.imageFiles = new ArrayList<>();
+        this.roundImages = new ArrayList<>();
+        this.roundImageNum = Math.max(round.getMatchSize() / 4, 1);
+        this.roundImage = ImageIO.read(Objects.requireNonNull(getClass().getClassLoader().getResource("MatchImage.png")));
+
+
+        int width = (this.roundImage.getWidth() * this.roundImageNum) + (40 * this.roundImageNum + 1);
+        int height = (this.roundImage.getHeight() + 300);
+        this.image = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
+        for (int i = 0; i < round.getMatchSize(); i++) {
+            this.imageFiles.add(new File("src/main/resources/roundImages/round" + round.getRoundNum() + "_" + i + ".png"));
+        }
+
+        this.masterImage = new File("src/main/resources/roundImages/round" + round.getRoundNum() + ".png");
     }
 
     public File generateImage() {
         Graphics2D graphics = this.image.createGraphics();
-        graphics.setFont(new Font( "SansSerif", Font.BOLD, 36));
-        //TODO: Center Round String in Box
-        graphics.drawString("Round " + this.round.getRoundNum(), 300, 200);
+        graphics.setColor(Color.GRAY);
+        graphics.fillRect(0, 0, this.image.getWidth(), this.image.getHeight());
+        graphics.setColor(Color.BLACK);
+
+        graphics.setFont(new Font("SansSerif", Font.BOLD, 80));
+
+        FontMetrics metrics = graphics.getFontMetrics();
+        String roundTitle = "Round " + this.round.getRoundNum();
+        int roundWidth = metrics.stringWidth(roundTitle);
+        int titleXPos = this.image.getWidth() - (this.image.getWidth() / 2) - (roundWidth / 2);
+        int titleYPos = metrics.getHeight() + 5;
+        graphics.drawString(roundTitle, titleXPos, titleYPos);
+
+        Iterator<Match> matchIter = this.round.iterator();
+        for (int i = 0; i < this.roundImageNum; i++) {
+            List<Match> matches = new ArrayList<>();
+            int j = 1;
+            while(matchIter.hasNext()) {
+                matches.add(matchIter.next());
+
+                if (j % 4 == 0) {
+                    break;
+                }
+
+                j++;
+            }
+
+            try {
+                this.roundImages.add(new MatchImage(matches, this.imageFiles.get(i)));
+            }
+            catch (IOException exception) {
+                exception.printStackTrace();
+            }
+        }
+
+
+        int xPos = 20;
+        for (MatchImage roundImage : this.roundImages) {
+            BufferedImage image = roundImage.generateImage();
+            graphics.drawImage(image, null, xPos, 150);
+            xPos += image.getWidth() + 20;
+        }
 
         try {
             this.writeFile();
@@ -33,9 +161,7 @@ public class RoundImage {
             exception.printStackTrace();
         }
         graphics.dispose();
-        System.out.println("Image width: " + this.image.getWidth());
-        System.out.println("Image height; " + this.image.getHeight());
-        return this.imageFile;
+        return this.masterImage;
 
     }
 
@@ -64,6 +190,6 @@ public class RoundImage {
     }
 
     private void writeFile() throws IOException {
-        ImageIO.write(this.image, "png", this.imageFile);
+        ImageIO.write(this.image, "png", this.masterImage);
     }
 }
