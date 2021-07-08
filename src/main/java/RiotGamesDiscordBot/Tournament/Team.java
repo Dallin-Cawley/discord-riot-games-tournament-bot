@@ -1,5 +1,6 @@
 package RiotGamesDiscordBot.Tournament;
 
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.SummonerName;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
 import org.jetbrains.annotations.NotNull;
 
@@ -59,6 +60,16 @@ public class Team implements Iterable<SummonerInfo>{
     public boolean containsMember(String summonerID) {
         for (SummonerInfo summonerInfo : this.members) {
             if (summonerInfo.getEncryptedSummonerId().equals(summonerID)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean containsMember(SummonerName summonerName) {
+        for (SummonerInfo summonerInfo : this.members) {
+            if (summonerInfo.getSummonerName().equals(summonerName.summonerName)) {
                 return true;
             }
         }

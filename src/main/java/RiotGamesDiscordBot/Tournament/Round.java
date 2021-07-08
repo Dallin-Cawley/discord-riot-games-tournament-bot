@@ -34,8 +34,12 @@ public class Round implements Iterable<Match>{
         return this.matches.size();
     }
 
-    public Match get(int i) {
+    public Match getMatch(int i) {
         return this.matches.get(i);
+    }
+
+    public void setMatch(int i, Match match) {
+        this.matches.set(i, match);
     }
 
     @Override

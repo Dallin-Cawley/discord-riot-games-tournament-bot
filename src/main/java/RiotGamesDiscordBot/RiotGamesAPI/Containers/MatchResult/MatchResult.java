@@ -46,4 +46,12 @@ public class MatchResult {
     public String toString() {
         return this.metaData.title + " : " + this.region + " - " + this.gameMode;
     }
+
+    public List<SummonerName> getLosingTeam() {
+        return losingTeam;
+    }
+
+    public List<SummonerName> getWinningTeam() {
+        return winningTeam;
+    }
 }

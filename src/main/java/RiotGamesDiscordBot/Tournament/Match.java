@@ -1,7 +1,11 @@
 package RiotGamesDiscordBot.Tournament;
 
 import RiotGamesDiscordBot.Logging.ConsoleColors;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchMetaData;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.SummonerName;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
+import RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration.MatchImageInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,46 +18,55 @@ import java.util.function.Consumer;
 public class Match implements Iterable<Team> {
     private final Team teamOne;
     private final Team teamTwo;
+    private final MatchMetaData metaData;
     private String tournamentCode;
-    private String matchId;
+
+    private MatchImageInfo matchImageInfo;
 
     private Team winner;
     private Team loser;
 
     private boolean isDone;
 
-    public Match(Team teamOne, Team teamTwo, String matchId) {
+    public Match(Team teamOne, Team teamTwo, MatchMetaData metaData) {
         this.teamOne = teamOne;
         this.teamTwo = teamTwo;
 
         this.winner = null;
         this.loser = null;
         this.isDone = false;
-        this.matchId = matchId;
+        this.metaData = metaData;
     }
 
     public boolean isDone() {
         return isDone;
     }
 
-    public void addWinner(Team winner) {
-        this.winner = winner;
+    public void setMatchResult(MatchResult matchResult) {
+        List<SummonerName> winningTeam = matchResult.getWinningTeam();
 
-        if (this.loser != null) {
-            this.isDone = true;
+        if (this.teamOne.containsMember(winningTeam.get(0))) {
+            this.winner = this.teamOne;
+            this.loser = this.teamTwo;
         }
-    }
-
-    public void addLoser(Team loser) {
-        this.loser = loser;
-
-        if (this.winner != null) {
-            this.isDone = true;
+        else {
+            this.loser = this.teamOne;
+            this.winner = this.teamTwo;
         }
+
+        this.isDone = true;
     }
 
     public void setTournamentCode(String tournamentCode) {
         this.tournamentCode = tournamentCode;
+    }
+
+    public void setMatchImageInfo(MatchImageInfo matchImageInfo) {
+        this.matchImageInfo = matchImageInfo;
+    }
+
+    public MatchImageInfo getMatchImageInfo() {
+        return matchImageInfo;
     }
 
     public Team getTeamOne() {
@@ -76,14 +89,18 @@ public class Match implements Iterable<Team> {
         return winner;
     }
 
-    public String getMatchId() {
-        return matchId;
+    public MatchMetaData getMetaData() {
+        return metaData;
+    }
+
+    public boolean isMatch(MatchResult matchResult) {
+        return this.teamOne.containsMember(matchResult.getWinningTeam().get(0)) || this.teamTwo.containsMember(matchResult.getWinningTeam().get(0));
     }
 
     @Override
     public boolean equals(Object object) {
         if (object instanceof Match) {
-            return this.matchId.equals(((Match) object).getMatchId());
+            return this.metaData == ((Match) object).getMetaData();
         }
 
         return false;

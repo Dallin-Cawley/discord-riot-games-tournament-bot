@@ -47,7 +47,7 @@ public class TournamentBotDriver {
         System.out.println("MatchResultJson: " + matchResultJson);
         MatchResult matchResult = new Gson().fromJson(matchResultJson, MatchResult.class);
 
-        tournamentManager.advanceTournament(matchResult);
+        this.tournamentManager.advanceTournament(matchResult);
         return "Done";
     }
 

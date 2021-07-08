@@ -3,12 +3,12 @@ package RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration;
 import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.BracketManager;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
 import RiotGamesDiscordBot.Tournament.Match;
 import RiotGamesDiscordBot.Tournament.Round;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
 import RiotGamesDiscordBot.Tournament.Team;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 import javax.imageio.ImageIO;
@@ -17,7 +17,6 @@ import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,11 +24,14 @@ import java.util.List;
 public class RoundRobinBracketManager extends BracketManager  {
     private final TextChannel commandChannel;
     private final List<RoundImage> roundImages;
+    private final List<Team> teams;
+    private String currentStandingMessageId;
 
-    public RoundRobinBracketManager(JDA discordAPI, TextChannel commandChannel) {
+    public RoundRobinBracketManager(JDA discordAPI, TextChannel commandChannel, List<Team> teams) {
         super(discordAPI);
         this.commandChannel = commandChannel;
         this.roundImages = new ArrayList<>();
+        this.teams = teams;
     }
 
     @Override
@@ -81,8 +83,21 @@ public class RoundRobinBracketManager extends BracketManager  {
         /*#############################################################################################
          * Create Current Standings Image
          *############################################################################################*/
+        this.generateStandings();
 
-        int numTeams = rounds.get(0).getMatchSize() * 2;
+        this.bracketGraphics.dispose();
+
+        try {
+            ImageIO.write(this.bracketImage, "png", new File("src/main/resources/currentStandings/current_standing.png"));
+        }
+        catch (IOException exception) {
+            exception.printStackTrace();
+        }
+
+    }
+
+    public void generateStandings() {
+        int numTeams = this.teams.size();
         int imageHeight = ((numTeams + 1) * 200) + ((numTeams + 1) * 40);
         int imageWidth = 1880;
         this.bracketImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_4BYTE_ABGR);
@@ -98,70 +113,60 @@ public class RoundRobinBracketManager extends BracketManager  {
             exception.printStackTrace();
         }
 
-            Round firstRound = rounds.get(0);
-            int yPos = 240;
-            for (Match match : firstRound) {
-                Team teamOne = match.getTeamOne();
-                try {
-                    BufferedImage teamOneStanding = ImageIO.read(new File("src/main/resources/Team-Standing.png"));
-                    Graphics2D teamStandingGraphics = teamOneStanding.createGraphics();
+        int yPos = 240;
+        for (int i = 0; i < this.teams.size(); i += 2) {
+            Team teamOne = this.teams.get(i);
+            try {
+                BufferedImage teamOneStanding = ImageIO.read(new File("src/main/resources/Team-Standing.png"));
+                Graphics2D teamStandingGraphics = teamOneStanding.createGraphics();
 
-                    // Write Team One Name
-                    teamStandingGraphics.setFont(new Font("SansSerif", Font.BOLD, 100));
-                    teamStandingGraphics.drawString(teamOne.getTeamName(), 50, 150);
+                // Write Team One Name
+                teamStandingGraphics.setFont(new Font("SansSerif", Font.BOLD, 100));
+                teamStandingGraphics.drawString(teamOne.getTeamName(), 50, 150);
 
-                    // Draw Starting Win Number
-                    teamStandingGraphics.drawString("0", 1325, 150);
+                // Draw Starting Win Number
+                teamStandingGraphics.drawString(String.valueOf(teamOne.getWins()), 1325, 150);
 
-                    // Draw Starting Loss Number
-                    teamStandingGraphics.drawString("0", 1675, 150);
-                    teamStandingGraphics.dispose();
+                // Draw Starting Loss Number
+                teamStandingGraphics.drawString(String.valueOf(teamOne.getLosses()), 1675, 150);
+                teamStandingGraphics.dispose();
 
-                    teamOneStanding = this.makeRoundedCorner(teamOneStanding);
+                teamOneStanding = this.makeRoundedCorner(teamOneStanding);
 
-                    this.bracketGraphics.drawImage(teamOneStanding, null, 40, yPos);
-                }
-                catch (IOException exception) {
-                    exception.printStackTrace();
-                }
+                this.bracketGraphics.drawImage(teamOneStanding, null, 40, yPos);
+            }
+            catch (IOException exception) {
+                exception.printStackTrace();
+            }
 
-                yPos += 240;
+            yPos += 240;
+
+            // Write Team Two Name
+            Team teamTwo = this.teams.get(i + 1);
+            try {
+                BufferedImage teamTwoStanding = ImageIO.read(new File("src/main/resources/Team-Standing.png"));
+                Graphics2D teamStandingGraphics = teamTwoStanding.createGraphics();
 
                 // Write Team Two Name
-                Team teamTwo = match.getTeamTwo();
-                try {
-                    BufferedImage teamTwoStanding = ImageIO.read(new File("src/main/resources/Team-Standing.png"));
-                    Graphics2D teamStandingGraphics = teamTwoStanding.createGraphics();
+                teamStandingGraphics.setFont(new Font("SansSerif", Font.BOLD, 100));
+                teamStandingGraphics.drawString(teamTwo.getTeamName(), 50, 150);
 
-                    // Write Team Two Name
-                    teamStandingGraphics.setFont(new Font("SansSerif", Font.BOLD, 100));
-                    teamStandingGraphics.drawString(teamTwo.getTeamName(), 50, 150);
+                // Draw Starting Win Number
+                teamStandingGraphics.drawString(String.valueOf(teamTwo.getWins()), 1325, 150);
 
-                    // Draw Starting Win Number
-                    teamStandingGraphics.drawString("0", 1325, 150);
+                // Draw Starting Loss Number
+                teamStandingGraphics.drawString(String.valueOf(teamTwo.getLosses()), 1675, 150);
+                teamStandingGraphics.dispose();
 
-                    // Draw Starting Loss Number
-                    teamStandingGraphics.drawString("0", 1675, 150);
-                    teamStandingGraphics.dispose();
+                teamTwoStanding = this.makeRoundedCorner(teamTwoStanding);
 
-                    teamTwoStanding = this.makeRoundedCorner(teamTwoStanding);
+                this.bracketGraphics.drawImage(teamTwoStanding, null, 40, yPos);
+            }
+            catch (IOException exception) {
+                exception.printStackTrace();
+            }
 
-                    this.bracketGraphics.drawImage(teamTwoStanding, null, 40, yPos);
-                }
-                catch (IOException exception) {
-                    exception.printStackTrace();
-                }
-
-                yPos += 240;
-        }
-
-        this.bracketGraphics.dispose();
-
-        try {
-            ImageIO.write(this.bracketImage, "png", new File("src/main/resources/currentStandings/current_standing.png"));
-        }
-        catch (IOException exception) {
-            exception.printStackTrace();
+            yPos += 240;
         }
 
     }
@@ -194,16 +199,34 @@ public class RoundRobinBracketManager extends BracketManager  {
     }
 
     @Override
-    public void updateBracket(MatchResult matchResult) {
+    public void updateBracket(Round currentRound) {
+        // Update Round Image first
+        RoundImage roundImage = this.roundImages.get(currentRound.getRoundNum() - 1);
+        this.tournamentChannel.deleteMessageById(roundImage.getMessageID()).queue();
+        this.sendRoundToChannel(currentRound.getRoundNum());
 
+        this.generateStandings();
+        try {
+            ImageIO.write(this.bracketImage, "png", new File("src/main/resources/currentStandings/current_standing.png"));
+            this.bracketGraphics.dispose();
+        }
+        catch (IOException exception) {
+            exception.printStackTrace();
+        }
+        this.tournamentChannel.deleteMessageById(this.currentStandingMessageId).queue();
+        this.sendCurrentStandings();
     }
 
     public void sendRoundToChannel(int roundNum) {
         RoundImage round = this.roundImages.get(roundNum - 1);
-        this.tournamentChannel.sendMessage("Round " + round.getRoundNum()).addFile(round.generateImage()).queue();
+        this.tournamentChannel.sendMessage("Round " + round.getRoundNum()).addFile(round.generateImage()).complete();
+        List<Message> messageID = this.tournamentChannel.getHistory().retrievePast(10).complete();
+        round.setMessageID(messageID.get(0).getId());
     }
 
     public void sendCurrentStandings() {
-        this.tournamentChannel.sendMessage("Current Standings").addFile(new File("src/main/resources/currentStandings/current_standing.png")).queue();
+        this.tournamentChannel.sendMessage("Current Standings").addFile(new File("src/main/resources/currentStandings/current_standing.png")).complete();
+        List<Message> messageIDs = this.tournamentChannel.getHistory().retrievePast(10).complete();
+        this.currentStandingMessageId = messageIDs.get(0).getId();
     }
 }

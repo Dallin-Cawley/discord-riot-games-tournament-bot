@@ -10,6 +10,7 @@ import java.util.List;
 public abstract class Tournament {
     private final long tournamentId;
     private final int  providerId;
+    protected boolean isDone;
     protected final List<Team> teams;
     protected final List<Match> activeMatches;
     protected final TextChannel messageChannel;
@@ -20,6 +21,7 @@ public abstract class Tournament {
         this.teams = teams;
         this.activeMatches = new ArrayList<>();
         this.messageChannel = event.getChannel();
+        this.isDone = false;
     }
 
     public Tournament(long tournamentId, int providerId, TextChannel channel, List<Team> teams) {
@@ -28,6 +30,7 @@ public abstract class Tournament {
         this.messageChannel = channel;
         this.teams = teams;
         this.activeMatches = new ArrayList<>();
+        this.isDone = false;
     }
 
     public abstract void setup();
@@ -44,6 +47,10 @@ public abstract class Tournament {
 
     public long getTournamentId() {
         return tournamentId;
+    }
+
+    public boolean isDone() {
+        return this.isDone;
     }
 
     @Override

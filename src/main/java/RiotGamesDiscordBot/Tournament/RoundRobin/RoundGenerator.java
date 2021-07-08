@@ -3,6 +3,7 @@ package RiotGamesDiscordBot.Tournament.RoundRobin;
 import RiotGamesDiscordBot.EventHandling.InputEventManager;
 import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchMetaData;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
@@ -46,7 +47,9 @@ public class RoundGenerator {
             Team teamOne = this.topRow.get(i);
             Team teamTwo = this.bottomRow.get(i);
 
-            Match match = new Match(teamOne, teamTwo, UUID.randomUUID().toString());
+            MatchMetaData matchMetaData = new MatchMetaData(this.tournamentId, UUID.randomUUID().toString());
+
+            Match match = new Match(teamOne, teamTwo, matchMetaData);
             matches.add(match);
         }
 

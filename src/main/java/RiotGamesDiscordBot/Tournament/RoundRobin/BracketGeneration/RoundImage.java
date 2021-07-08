@@ -1,5 +1,6 @@
 package RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration;
 
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
 import RiotGamesDiscordBot.Tournament.Match;
 import RiotGamesDiscordBot.Tournament.Round;
 
@@ -9,10 +10,9 @@ import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.io.InputStream;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
 
 public class RoundImage {
     private static class MatchImage {
@@ -37,6 +37,26 @@ public class RoundImage {
             for (Match match : this.matches) {
                 graphics.drawString(match.getTeamOne().getTeamName(), 125, yPos);
                 graphics.drawString(match.getTeamTwo().getTeamName(), 1150, yPos);
+
+                if (match.isDone()) {
+                    try {
+                        graphics.setColor(null);
+                        BufferedImage win = ImageIO.read(new File("src/main/resources/roundImages/Win.png"));
+                        BufferedImage loss = ImageIO.read(new File("src/main/resources/roundImages/Loss.png"));
+                        if (match.getWinner().equals(match.getTeamOne())) {
+                            graphics.drawImage(win, null, 600, yPos - 55);
+                            graphics.drawImage(loss, null, 1625, yPos - 55);
+                        }
+                        else {
+                            graphics.drawImage(win, null, 1625, yPos - 55);
+                            graphics.drawImage(loss, null, 600, yPos - 55);
+                        }
+                        graphics.setColor(Color.BLACK);
+                    }
+                    catch (IOException exception) {
+                        exception.printStackTrace();
+                    }
+                }
                 yPos += 147;
             }
 
@@ -90,6 +110,7 @@ public class RoundImage {
     private final List<File> imageFiles;
     private final File masterImage;
     private final List<MatchImage> roundImages;
+    private String messageID;
 
     public RoundImage(Round round) throws IOException {
         this.round = round;
@@ -128,7 +149,7 @@ public class RoundImage {
         for (int i = 0; i < this.roundImageNum; i++) {
             List<Match> matches = new ArrayList<>();
             int j = 1;
-            while(matchIter.hasNext()) {
+            while (matchIter.hasNext()) {
                 matches.add(matchIter.next());
 
                 if (j % 4 == 0) {
@@ -140,20 +161,18 @@ public class RoundImage {
 
             try {
                 this.roundImages.add(new MatchImage(matches, this.imageFiles.get(i)));
-            }
-            catch (IOException exception) {
+            } catch (IOException exception) {
                 exception.printStackTrace();
             }
         }
 
 
         int xPos = 20;
-        for (MatchImage roundImage : this.roundImages) {
-            BufferedImage image = roundImage.generateImage();
+        for (MatchImage matchImage : this.roundImages) {
+            BufferedImage image = matchImage.generateImage();
             graphics.drawImage(image, null, xPos, 150);
             xPos += image.getWidth() + 20;
         }
-
         try {
             this.writeFile();
         }
@@ -161,6 +180,7 @@ public class RoundImage {
             exception.printStackTrace();
         }
         graphics.dispose();
+        this.roundImages.clear();
         return this.masterImage;
 
     }
@@ -192,4 +212,13 @@ public class RoundImage {
     private void writeFile() throws IOException {
         ImageIO.write(this.image, "png", this.masterImage);
     }
+
+    public void setMessageID(String messageID) {
+        this.messageID = messageID;
+    }
+
+    public String getMessageID() {
+        return this.messageID;
+    }
+
 }

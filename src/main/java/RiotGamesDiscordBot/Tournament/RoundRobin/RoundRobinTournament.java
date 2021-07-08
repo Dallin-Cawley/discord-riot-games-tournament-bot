@@ -6,7 +6,8 @@ import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.TournamentCodeMetaData;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchMetaData;
+import RiotGamesDiscordBot.RiotGamesAPI.EmbeddedMessages.TournamentWinnerEmbeddedMessageBuilder;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
 import RiotGamesDiscordBot.Tournament.*;
 import RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration.RoundRobinBracketManager;
@@ -15,6 +16,7 @@ import RiotGamesDiscordBot.Tournament.RoundRobin.Events.MemberOnBothTeamsEvent;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Events.TeamMemberDuplicateEvent;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
 import com.google.gson.Gson;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
@@ -23,6 +25,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.List;
 
 public class RoundRobinTournament extends Tournament implements Suspendable {
 
@@ -34,7 +37,8 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
     private final List<Round> rounds = new ArrayList<>();
     private final RoundRobinBracketManager bracketManager;
     private final JDA discordAPI;
-    private final int currentRound;
+    private int currentRound;
+    private Team tournamentWinner;
 
     public RoundRobinTournament(int providerId, long tournamentId, TournamentConfig tournamentConfig, GuildMessageReceivedEvent event, List<Team> teams,
                                 InputEventManager eventManager, JDA discordAPI) {
@@ -43,7 +47,7 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
         this.suspended = false;
         this.eventManager = eventManager;
         this.discordAPI = discordAPI;
-        this.bracketManager = new RoundRobinBracketManager(this.discordAPI, event.getChannel());
+        this.bracketManager = new RoundRobinBracketManager(this.discordAPI, event.getChannel(), this.teams);
         this.currentRound = 1;
     }
 
@@ -54,7 +58,7 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
         this.suspended = false;
         this.eventManager = eventManager;
         this.discordAPI = discordAPI;
-        this.bracketManager = new RoundRobinBracketManager(this.discordAPI, textChannel);
+        this.bracketManager = new RoundRobinBracketManager(this.discordAPI, textChannel, this.teams);
         this.currentRound = 1;
     }
 
@@ -78,8 +82,8 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
 
         // Generate the Rounds
         Logger.log("Generating Rounds", Level.INFO);
-        int roundNum = teams.size() - 1;
-        RoundGenerator roundGenerator = new RoundGenerator(teams, this.getTournamentId(), tournamentConfig);
+        int roundNum = this.teams.size() - 1;
+        RoundGenerator roundGenerator = new RoundGenerator(this.teams, this.getTournamentId(), this.tournamentConfig);
 
         for (int i = 0; i < roundNum; i++) {
             Round round = roundGenerator.generateRound(i + 1);
@@ -139,8 +143,8 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
                         summonerIds.add(summonerInfo.getEncryptedSummonerId());
                     }
                 }
-                TournamentCodeMetaData metaData = new TournamentCodeMetaData(this.getTournamentId(), match.getMatchId());
-                TournamentCodeParameters parameters = new TournamentCodeParameters(summonerIds, this.tournamentConfig, metaData);
+
+                TournamentCodeParameters parameters = new TournamentCodeParameters(summonerIds, this.tournamentConfig, match.getMetaData());
                 try {
                     String[] tournamentCodes = gson.fromJson(riotGamesAPI.getTournamentCodes(this.getTournamentId(),
                             1, parameters), String[].class);
@@ -355,14 +359,70 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
 
     }
 
+    private boolean isRoundOver() {
+        for (Match match : this.rounds.get(this.currentRound - 1)) {
+            if (!match.isDone()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public void advanceTournament(MatchResult matchResult) {
-        System.out.println("Match Result: " + matchResult);
+        Round currentRound = this.rounds.get(this.currentRound - 1);
+        MatchMetaData metaData = new Gson().fromJson(matchResult.getMetaData().getTitle(), MatchMetaData.class);
+
+        for (Match match : currentRound) {
+            if (metaData.getMatchId().equals(match.getMetaData().getMatchId())) {
+                match.setMatchResult(matchResult);
+                break;
+            }
+        }
+
+        for (Team team : this.teams) {
+            if (team.containsMember(matchResult.getWinningTeam().get(0))) {
+                team.addWin();
+            }
+            if (team.containsMember(matchResult.getLosingTeam().get(0))) {
+                team.addLoss();
+            }
+        }
+
+        this.bracketManager.updateBracket(this.rounds.get(this.currentRound - 1));
+
+        // Determine if the Round is over
+        if (this.isRoundOver()) {
+            this.currentRound++;
+
+            // Tournament is Over
+            System.out.println("0 indexed current round: " + (this.currentRound - 1));
+            System.out.println("Round size: " + this.rounds.size());
+            if ((this.currentRound - 1) == this.rounds.size()) {
+                this.tournamentWinner = this.teams.get(0);
+
+                for (Team team : this.teams) {
+                    if (this.tournamentWinner.getWins() < team.getWins()) {
+                        this.tournamentWinner = team;
+                    }
+                }
+                this.endTournament();
+            }
+            // Tournament is ongoing
+            else {
+                this.bracketManager.sendRoundToChannel(this.currentRound);
+            }
+        }
+
+
     }
 
     @Override
     public void endTournament() {
-
+        //TODO: Convert winning message to MessageEmbed
+        this.messageChannel.sendMessage(new TournamentWinnerEmbeddedMessageBuilder(this.tournamentWinner).buildMessageEmbed()).queue();
+        this.isDone = true;
     }
 
     @Override

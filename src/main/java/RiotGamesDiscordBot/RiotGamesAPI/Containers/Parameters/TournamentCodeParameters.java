@@ -3,14 +3,12 @@ package RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MapType;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.PickType;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SpectatorType;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.TournamentCodeMetaData;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchMetaData;
 import RiotGamesDiscordBot.Tournament.TournamentConfig;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 
 public class TournamentCodeParameters {
@@ -21,7 +19,7 @@ public class TournamentCodeParameters {
     private final MapType mapType;
     private final SpectatorType spectatorType;
 
-    public TournamentCodeParameters(List<String> allowedSummonerIds, TournamentConfig tournamentConfig, TournamentCodeMetaData metaData) {
+    public TournamentCodeParameters(List<String> allowedSummonerIds, TournamentConfig tournamentConfig, MatchMetaData metaData) {
         this.teamSize = tournamentConfig.getTeamSize();
         this.pickType = tournamentConfig.getPickType();
         this.mapType = tournamentConfig.getMapType();

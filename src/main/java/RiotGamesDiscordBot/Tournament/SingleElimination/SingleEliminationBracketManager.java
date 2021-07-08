@@ -3,16 +3,13 @@ package RiotGamesDiscordBot.Tournament.SingleElimination;
 import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.BracketLeaf;
 import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.BracketManager;
 import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.MatchImage;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
 import RiotGamesDiscordBot.Tournament.Match;
 import RiotGamesDiscordBot.Tournament.Round;
-import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.List;
 
 public class SingleEliminationBracketManager extends BracketManager {
@@ -48,7 +45,7 @@ public class SingleEliminationBracketManager extends BracketManager {
         //Add in the initial Teams
         for (int i = 0; i < this.matchImages.size(); i++) {
             MatchImage temp = this.matchImages.get(i);
-            Match match = firstRound.get(i);
+            Match match = firstRound.getMatch(i);
             temp.setTeamOne(match.getTeamOne().getTeamName(), this.bracketGraphics);
             temp.setTeamTwo(match.getTeamTwo().getTeamName(), this.bracketGraphics);
         }
@@ -66,7 +63,7 @@ public class SingleEliminationBracketManager extends BracketManager {
     }
 
     @Override
-    public void updateBracket(MatchResult matchResult) {
+    public void updateBracket(Round round) {
 
     }
 

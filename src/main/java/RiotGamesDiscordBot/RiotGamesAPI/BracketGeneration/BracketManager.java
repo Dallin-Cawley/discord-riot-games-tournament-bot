@@ -36,5 +36,5 @@ public abstract class BracketManager {
 
     public abstract void generateBracket(List<Round> rounds) throws TournamentChannelNotFound;
 
-    public abstract void updateBracket(MatchResult matchResult);
+    public abstract void updateBracket(Round round);
 }

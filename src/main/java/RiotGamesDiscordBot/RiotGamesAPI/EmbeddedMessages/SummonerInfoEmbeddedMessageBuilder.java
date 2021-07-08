@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SummonerInfoEmbeddedMessageBuilder extends EmbeddedMessageBuilder {
+public class SummonerInfoEmbeddedMessageBuilder implements EmbeddedMessageBuilder {
     protected static final String DATA_DRAGON_BASE_URL = "http://ddragon.leagueoflegends.com/cdn/10.20.1/";
 
     private static final String PROFILE_ICON_BASE_URL = DATA_DRAGON_BASE_URL + "img/profileicon/";
@@ -51,11 +51,6 @@ public class SummonerInfoEmbeddedMessageBuilder extends EmbeddedMessageBuilder {
         this.videoInfo = null;
         this.footer = new MessageEmbed.Footer("This is the footer.", null, null);
         this.image = new MessageEmbed.ImageInfo(null, null, 0, 0);
-    }
-
-    public SummonerInfoEmbeddedMessageBuilder() {
-        this.info = null;
-        this.fields = new ArrayList<>();
     }
 
     private ArrayList<MessageEmbed.Field> formatFields() {
