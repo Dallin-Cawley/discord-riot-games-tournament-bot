@@ -21,16 +21,14 @@ public abstract class BracketManager {
     protected BufferedImage bracketImage;
     protected Graphics2D bracketGraphics;
 
-    protected final JDA discordAPI;
     protected TextChannel tournamentChannel;
     protected final File imageFile;
 
     protected final List<MatchImage> matchImages;
 
 
-    public BracketManager(JDA discordAPI) {
+    public BracketManager() {
         this.matchImages = new ArrayList<>();
-        this.discordAPI = discordAPI;
         this.imageFile = new File("/resources/bracketImage.png");
     }
 

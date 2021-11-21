@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 public class Match implements Iterable<Team> {
     private final Team teamOne;
     private final Team teamTwo;
-    private final MatchMetaData metaData;
+    private MatchMetaData metaData;
     private String tournamentCode;
 
     private MatchImageInfo matchImageInfo;
@@ -28,14 +28,14 @@ public class Match implements Iterable<Team> {
 
     private boolean isDone;
 
-    public Match(Team teamOne, Team teamTwo, MatchMetaData metaData) {
+    public Match(Team teamOne, Team teamTwo) {
         this.teamOne = teamOne;
         this.teamTwo = teamTwo;
 
         this.winner = null;
         this.loser = null;
         this.isDone = false;
-        this.metaData = metaData;
+        this.metaData = null;
     }
 
     public boolean isDone() {
@@ -63,6 +63,14 @@ public class Match implements Iterable<Team> {
 
     public void setMatchImageInfo(MatchImageInfo matchImageInfo) {
         this.matchImageInfo = matchImageInfo;
+    }
+
+    public void setMetaData(MatchMetaData metaData) {
+        this.metaData = metaData;
+    }
+
+    public void setTournamentId(long tournamentId) {
+        this.metaData.setTournamentId(tournamentId);
     }
 
     public MatchImageInfo getMatchImageInfo() {

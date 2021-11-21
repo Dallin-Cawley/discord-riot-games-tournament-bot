@@ -1,6 +1,6 @@
 package RiotGamesDiscordBot.Tournament.RoundRobin;
 
-import RiotGamesDiscordBot.EventHandling.InputEventManager;
+import RiotGamesDiscordBot.Logging.DiscordLog.DiscordTextUtils;
 import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
@@ -8,100 +8,94 @@ import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodePara
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchMetaData;
 import RiotGamesDiscordBot.RiotGamesAPI.EmbeddedMessages.TournamentWinnerEmbeddedMessageBuilder;
+import RiotGamesDiscordBot.RiotGamesAPI.Event.SummonerNotFoundErrorEvent;
 import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
+import RiotGamesDiscordBot.RiotGamesAPI.SummonerNotFoundException;
 import RiotGamesDiscordBot.Tournament.*;
 import RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration.RoundRobinBracketManager;
-import RiotGamesDiscordBot.Tournament.RoundRobin.Events.DuplicateTeamEvent;
-import RiotGamesDiscordBot.Tournament.RoundRobin.Events.MemberOnBothTeamsEvent;
-import RiotGamesDiscordBot.Tournament.RoundRobin.Events.TeamMemberDuplicateEvent;
+import RiotGamesDiscordBot.Tournament.RoundRobin.Events.DuplicateOpponentErrorEvent;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
 import com.google.gson.Gson;
-import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.List;
 
-public class RoundRobinTournament extends Tournament implements Suspendable {
-
-    private final TournamentConfig tournamentConfig;
-    private boolean suspended;
-    private Method resumeMethod;
-    private Object resumeClassObject;
-    private final InputEventManager eventManager;
+public class RoundRobinTournament extends Tournament {
     private final List<Round> rounds = new ArrayList<>();
-    private final RoundRobinBracketManager bracketManager;
-    private final JDA discordAPI;
+    private transient final RoundRobinBracketManager bracketManager;
     private int currentRound;
     private Team tournamentWinner;
 
-    public RoundRobinTournament(int providerId, long tournamentId, TournamentConfig tournamentConfig, GuildMessageReceivedEvent event, List<Team> teams,
-                                InputEventManager eventManager, JDA discordAPI) {
-        super(tournamentId, providerId, event, teams);
-        this.tournamentConfig = tournamentConfig;
-        this.suspended = false;
-        this.eventManager = eventManager;
-        this.discordAPI = discordAPI;
-        this.bracketManager = new RoundRobinBracketManager(this.discordAPI, event.getChannel(), this.teams);
+    public RoundRobinTournament(TournamentConfig tournamentConfig, GuildMessageReceivedEvent event, Map<String, List<String>> teams, DiscordUser creator) {
+        super(tournamentConfig, event, teams, creator);
+        this.bracketManager = new RoundRobinBracketManager(this.teams, this.eventManager.getDiscordLogger().getTournamentImageChannel());
         this.currentRound = 1;
     }
 
-    public RoundRobinTournament(int providerId, long tournamentId, TournamentConfig tournamentConfig,
-                                TextChannel textChannel, List<Team> teams, InputEventManager eventManager, JDA discordAPI) {
-        super(tournamentId, providerId, textChannel, teams);
-        this.tournamentConfig = tournamentConfig;
-        this.suspended = false;
-        this.eventManager = eventManager;
-        this.discordAPI = discordAPI;
-        this.bracketManager = new RoundRobinBracketManager(this.discordAPI, textChannel, this.teams);
+    public RoundRobinTournament(TournamentConfig tournamentConfig, TextChannel textChannel, Map<String, List<String>> teams, DiscordUser creator) {
+        super(tournamentConfig, textChannel, teams, creator);
+        this.bracketManager = new RoundRobinBracketManager(this.teams, this.eventManager.getDiscordLogger().getTournamentImageChannel());
         this.currentRound = 1;
     }
 
     /**
-     * Validates the data surround the tournament. Validates that no team faces another twice, all members of a team
-     * are unique, all participants of the tournament are unique, and all teams are unique.
+     * Validates tournament specific data for the tournament. Validates that no team faces another twice.
      */
     @Override
     public void setup() {
-        if (teams.size() % 2 == 1) {
-            teams.add(new Team("BYE"));
+        // Get full summoner information from RIOT
+        Gson gson = new Gson();
+        RiotGamesAPI api = new RiotGamesAPI();
+        Set<String> keySet = preSetupTeams.keySet();
+        for (String teamName : keySet) {
+            List<String> summonerNames = preSetupTeams.get(teamName);
+            Team team = new Team(teamName);
+            for (String summonerName: summonerNames) {
+                try {
+                    SummonerInfo summonerInfo = gson.fromJson(api.getSummonerInfoByName(summonerName), SummonerInfo.class);
+                    team.addMember(summonerInfo);
+                }
+                catch (IOException exception) {
+                    exception.printStackTrace();
+                    if (exception instanceof SummonerNotFoundException) {
+                        SummonerNotFoundErrorEvent event = new SummonerNotFoundErrorEvent(summonerName);
+                        this.eventManager.addEvent(event);
+                    }
+
+                    return;
+                }
+            }
+            this.teams.add(team);
         }
 
-        // Ensure that all participants are unique. No participant is on multiple teams.
-        Logger.log("Validating team compositions", Level.INFO);
-        if (!this.validateTeamCompositions()) {
-            Logger.log("Team composition failed validation", Level.WARNING);
-            this.suspend();
-            return;
+        // Place a fake team if there is an odd number of teams.
+        if (teams.size() % 2 == 1) {
+            this.teams.add(new Team("BYE"));
         }
 
         // Generate the Rounds
         Logger.log("Generating Rounds", Level.INFO);
         int roundNum = this.teams.size() - 1;
-        RoundGenerator roundGenerator = new RoundGenerator(this.teams, this.getTournamentId(), this.tournamentConfig);
+        RoundGenerator roundGenerator = new RoundGenerator(this.teams);
+        Logger.log("Round num: " + roundNum, Level.INFO);
+        Logger.log("Team size: " + this.teams.size(), Level.INFO);
 
         for (int i = 0; i < roundNum; i++) {
-            Round round = roundGenerator.generateRound(i + 1);
+            Round round = roundGenerator.generateRound(i + 1, this.getTournamentId());
             this.rounds.add(round);
             roundGenerator.rotate();
         }
 
-        Logger.log("Validating rounds", Level.INFO);
-        if (!this.validateRounds(this.rounds)) {
-            Logger.log("Failed round validation. Suspending Tournament", Level.WARNING);
-            this.suspend();
+        // If for whatever reason the round generation has a team facing another twice, do not complete setup
+        if (!validateRounds(this.rounds)) {
+            return;
         }
 
-        if (!this.suspended) {
-            Logger.log("Passed all validation checks.", Level.INFO);
-            this.start();
-        }
-
+        this.setSetup(true);
     }
 
     @Override
@@ -110,17 +104,7 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
 
         // Generate Bracket before creating tournament codes
 
-        try {
-            this.bracketManager.generateBracket(this.rounds);
-        }
-        catch (TournamentChannelNotFound exception) {
-            String uuid = UUID.randomUUID().toString();
-            exception.event.setEventId(uuid);
-            exception.event.setSuspendable(this);
-            this.eventManager.registerEvent(uuid, exception.event);
-            this.suspend();
-            return;
-        }
+        this.bracketManager.generateBracket(this.rounds);
 
         // Create Tournament Codes
         RiotGamesAPI riotGamesAPI = new RiotGamesAPI();
@@ -162,99 +146,15 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
 
         this.bracketManager.sendRoundToChannel(this.currentRound);
         this.bracketManager.sendCurrentStandings();
+        this.sendCurrentRoundMatchCodes();
     }
 
-    /**
-     * <pre>
-     * Validates that no participant is on two teams.
-     *
-     * If there are members on multiple teams, an instance of MemberOnBothTeamsEvent is registered that allows members of
-     * the server to solve the issue. An event is registered on the first instance of a participant being on multiple teams.
-     *
-     * If there is a member that is on one team multiple times an instance of TeamMemberDuplicateEvent is registered.
-     * This event is registered on the first encounter of a duplicate team member.
-     * </pre>
-     * @return true if all participants are unique, false otherwise
-     */
-    private boolean validateTeamCompositions() {
-        // Ensure each member of each team is unique
-        for (Team team : this.teams) {
-            if (this.suspended) {
-                break;
-            }
-
-            List<SummonerInfo> teamMembers = team.getMembers();
-
-            // Check every team
-            boolean passedTeam = false;
-            for (Team diffTeam : this.teams) {
-                if (this.suspended) {
-                    break;
-                }
-
-                if (diffTeam.equals(team)) {
-                    if (passedTeam) {
-                        Logger.log(team.getTeamName() + " is listed twice in the Tournament Config file", Level.ERROR);
-                        this.eventManager.handleUnHandleableEvents(new DuplicateTeamEvent(this, this.messageChannel, team));
-                        return false;
-                    }
-                    passedTeam = true;
-                    continue;
-                }
-
-                //make sure every Summoner of team is not in diffTeam
-                for (SummonerInfo summoner : teamMembers) {
-                    if (diffTeam.containsMember(summoner.getEncryptedSummonerId())) {
-                        String eventID = UUID.randomUUID().toString();
-                        MemberOnBothTeamsEvent memberOnBothTeamsEvent = new MemberOnBothTeamsEvent(this.messageChannel, eventID, summoner, team, diffTeam, this);
-                        this.eventManager.registerEvent(eventID, memberOnBothTeamsEvent);
-                        return false;
-                    }
-                }
-            }
-
-            //Make Sure that each team has unique members
-            int indexOfDuplicate = this.validateTeam(team);
-            if (indexOfDuplicate >= 0) {
-                String eventID = UUID.randomUUID().toString();
-                SummonerInfo duplicateMember = team.getMembers().get(indexOfDuplicate);
-                TeamMemberDuplicateEvent teamMemberDuplicateEvent = new TeamMemberDuplicateEvent(this.messageChannel, duplicateMember, team, eventID, this);
-                this.eventManager.registerEvent(eventID, teamMemberDuplicateEvent);
-                return false;
-            }
+    private void sendCurrentRoundMatchCodes() {
+        Round currentRound = this.rounds.get(this.currentRound - 1);
+        for (Match match : currentRound) {
+            String message = DiscordTextUtils.colorGreen("Match Code for Match " + match.getTeamOne().getTeamName() + " VS " + match.getTeamTwo().getTeamName()) + "\n" + match.getTournamentCode();
+            this.creator.sendPrivateMessage(message);
         }
-
-        return true;
-    }
-
-    /**
-     *
-     * Make sure that each member of the team is unique. No repeat members
-     *
-     * @param team Team - the team that is being validated
-     *
-     * @return true if all members of the team are unique, false otherwise
-     */
-    private int validateTeam(Team team) {
-        List<SummonerInfo> members = team.getMembers();
-
-        for (int i = 0; i < members.size(); i++) {
-            SummonerInfo member = members.get(i);
-
-            for (int j = 0; j < members.size(); j++) {
-                // Don't let member be compared with itself
-                if (j == i) {
-                    continue;
-                }
-                SummonerInfo anotherMember = members.get(j);
-                // If there is a repeat, the team is not valid
-                if (member.equals(anotherMember)) {
-                    return j;
-                }
-            }
-        }
-
-        return -1;
     }
 
     /**
@@ -266,6 +166,7 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
      * @return true if rounds are valid, false otherwise
      */
     private boolean validateRounds(List<Round> rounds) {
+        System.out.println("Round size: " + rounds.size());
         if (rounds.size() <= 0) {
             return false;
         }
@@ -277,16 +178,14 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
             Team teamTwo = match.getTeamTwo();
 
             if (this.duplicateOpponent(teamOne, rounds)) {
-                // Register TeamDuplicateOpponent
-
-                // Return false
+                DuplicateOpponentErrorEvent event = new DuplicateOpponentErrorEvent(teamOne);
+                this.eventManager.addEvent(event);
                 return false;
             }
 
             if (this.duplicateOpponent(teamTwo, rounds)) {
-                // Register TeamDuplicateOpponent
-
-                // Return false
+                DuplicateOpponentErrorEvent event = new DuplicateOpponentErrorEvent(teamTwo);
+                this.eventManager.addEvent(event);
                 return false;
             }
         }
@@ -412,45 +311,41 @@ public class RoundRobinTournament extends Tournament implements Suspendable {
             // Tournament is ongoing
             else {
                 this.bracketManager.sendRoundToChannel(this.currentRound);
+                this.sendCurrentRoundMatchCodes();
             }
         }
 
 
     }
 
+    public List<Round> getRounds() {
+        return rounds;
+    }
+
+    @Override
+    public void setTournamentId(long tournamentId) {
+        super.setTournamentId(tournamentId);
+        for (Round round : this.rounds) {
+            for (Match match : round) {
+                match.setTournamentId(tournamentId);
+            }
+        }
+    }
+
     @Override
     public void endTournament() {
-        //TODO: Convert winning message to MessageEmbed
-        this.messageChannel.sendMessage(new TournamentWinnerEmbeddedMessageBuilder(this.tournamentWinner).buildMessageEmbed()).queue();
+        this.context.sendMessage(new TournamentWinnerEmbeddedMessageBuilder(this.tournamentWinner).buildMessageEmbed()).queue();
         this.isDone = true;
     }
 
     @Override
-    public void suspend() {
-        this.suspended = true;
-        StackTraceElement[] stackTraces = Thread.currentThread().getStackTrace();
-        StackTraceElement currentMethod = stackTraces[2];
-
-        try {
-            Class<?> className = Class.forName(currentMethod.getClassName());
-            this.resumeClassObject = className.getDeclaredConstructor(int.class, long.class, TournamentConfig.class,
-                    TextChannel.class, List.class, InputEventManager.class, JDA.class)
-                    .newInstance(this.getProviderId(), this.getTournamentId(), this.tournamentConfig,
-                            this.messageChannel, this.teams, this.eventManager, this.discordAPI);
-            this.resumeMethod = className.getMethod(currentMethod.getMethodName());
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException exception) {
-            exception.printStackTrace();
-        }
+    public void idle() {
+        this.isIdle = true;
     }
 
     @Override
     public void resume() {
-        this.suspended = false;
-        try {
-            this.resumeMethod.invoke(this.resumeClassObject);
-        }
-        catch (IllegalAccessException | InvocationTargetException exception) {
-            exception.printStackTrace();
-        }
+        this.isIdle = false;
+
     }
 }

@@ -14,6 +14,7 @@ public class Team implements Iterable<SummonerInfo>{
     private final List<SummonerInfo> members;
     private  final String teamName;
 
+    private int participantNum;
     private int wins;
     private int losses;
 
@@ -39,6 +40,11 @@ public class Team implements Iterable<SummonerInfo>{
 
     public void addMember(SummonerInfo member) {
         this.members.add(member);
+        this.participantNum++;
+    }
+
+    public int size() {
+        return this.participantNum;
     }
 
     public int getLosses() {

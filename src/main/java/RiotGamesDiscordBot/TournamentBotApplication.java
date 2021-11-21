@@ -5,25 +5,22 @@ import RiotGamesDiscordBot.Tournament.TournamentManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.TextChannel;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
-import javax.annotation.Resource;
 import javax.security.auth.login.LoginException;
-import java.util.List;
 
 @SpringBootApplication
 public class TournamentBotApplication {
-    private JDA discordAPI;
+    private static JDA discordAPI;
 
-    @Resource(name = "tournamentManager")
-    private TournamentManager tournamentManager;
-
-    public static void main(String[] args) {
+    public static void main(String[] args) throws LoginException, InterruptedException {
+        startDiscordAPI();
+        TournamentManager.getInstance();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> TournamentManager.getInstance().shutdown()));
         SpringApplication.run(TournamentBotApplication.class, args);
     }
 
@@ -34,26 +31,17 @@ public class TournamentBotApplication {
         };
     }
 
-    @Bean(name = "tournamentBot")
-    public JDA getDiscordAPI() throws LoginException, InterruptedException {
-        JDABuilder builder = JDABuilder.createDefault(System.getenv("DISCORD_BOT_TOKEN"));
-        builder.setActivity(Activity.of(Activity.ActivityType.LISTENING, "You Bozos"));
-        this.discordAPI = builder.build();
-        this.discordAPI.awaitReady();
+    public static void startDiscordAPI() throws LoginException, InterruptedException {
+        if (discordAPI == null) {
+            JDABuilder builder = JDABuilder.createDefault(System.getenv("DISCORD_BOT_TOKEN"));
+            builder.setActivity(Activity.of(Activity.ActivityType.LISTENING, "You Bozos"));
+            discordAPI = builder.build();
+            discordAPI.awaitReady();
 
-        this.discordAPI.addEventListener(new DiscordBotCommands(this.discordAPI, this.tournamentManager));
+            discordAPI.addEventListener(new DiscordBotCommands(discordAPI));
+        }
 
-        return this.discordAPI;
     }
 
-    @Bean(name = "textChannels")
-    public List<TextChannel> getTextChannels() {
-        return this.discordAPI.getTextChannels();
-    }
-
-    @Bean(name = "tournamentManager")
-    public TournamentManager getTournamentManager() {
-        return new TournamentManager();
-    }
 }
 

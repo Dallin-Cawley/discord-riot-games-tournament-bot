@@ -27,7 +27,13 @@ public class RiotGamesAPI {
 
     public int getProviderID(URL callBackURL, Region region) throws IOException {
         try {
-            URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/providers");
+            URI uri;
+            if (System.getenv("DEVELOPMENT").equals("TRUE")) {
+                uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/providers");
+            }
+            else {
+                uri = new URI(REGIONAL_BASE_URL + "/lol/tournament/v4/providers");
+            }
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
             requestContents.addRequestBody(new ProviderRegistrationParameters(region, callBackURL.toString()));
             HttpResponseContents responseContents = request(requestContents);
@@ -43,7 +49,13 @@ public class RiotGamesAPI {
 
     public int getTournamentID(int providerID, String tournamentName) throws IOException {
         try {
-            URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/tournaments");
+            URI uri;
+            if (System.getenv("DEVELOPMENT").equals("TRUE")) {
+                uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/tournaments");
+            }
+            else {
+                uri = new URI(REGIONAL_BASE_URL + "/lol/tournament/v4/tournaments");
+            }
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
             requestContents.addRequestBody(new TournamentRegistrationParameters(tournamentName, providerID));
             HttpResponseContents responseContents = request(requestContents);
@@ -58,7 +70,13 @@ public class RiotGamesAPI {
 
     public String getTournamentCodes(long tournamentID, int tournamentCodeNum, TournamentCodeParameters tournamentCodeParameters) throws IOException {
         try {
-            URI uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/codes?count=" + tournamentCodeNum + "&tournamentId=" + tournamentID);
+            URI uri;
+            if (System.getenv("DEVELOPMENT").equals("TRUE")) {
+                uri = new URI(REGIONAL_BASE_URL + "/lol/tournament-stub/v4/codes?count=" + tournamentCodeNum + "&tournamentId=" + tournamentID);
+            }
+            else {
+                uri = new URI(REGIONAL_BASE_URL + "/lol/tournament/v4/codes?count=" + tournamentCodeNum + "&tournamentId=" + tournamentID);
+            }
             HttpRequestContents requestContents = new HttpRequestContents(uri, RequestType.POST);
             requestContents.addRequestBody(tournamentCodeParameters);
             HttpResponseContents responseContents = this.request(requestContents);
@@ -119,7 +137,7 @@ public class RiotGamesAPI {
             if (riotAPIError.getStatusLine().statusCode == 404) {
                 throw new SummonerNotFoundException(contents.getRequestBody());
             }
-            Logger.log(contents.getUri() + "\n\t" + riotAPIError.toString(), Level.WARNING);
+            Logger.log(contents.getUri() + "\n\t" + riotAPIError, Level.WARNING);
         }
 
         return new HttpResponseContents(responseHandler.getResponseBytes());

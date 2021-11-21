@@ -11,9 +11,11 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Locale;
 
 public class TournamentConfig {
     private double teamSize;
+    private boolean createChannels;
     private String metadata;
     private PickType pickType;
     private MapType mapType;
@@ -29,6 +31,7 @@ public class TournamentConfig {
         this.mapType = MapType.SUMMONERS_RIFT;
         this.spectatorType = SpectatorType.ALL;
         this.metadata = "Tournament";
+        this.createChannels = true;
 
         try {
             Workbook workbook = new XSSFWorkbook(new FileInputStream(tournamentConfigFile));
@@ -42,6 +45,9 @@ public class TournamentConfig {
             this.mapType = MapType.valueOf(configRow.getCell(9).getStringCellValue().trim());
             this.spectatorType = SpectatorType.valueOf(configRow.getCell(11).getStringCellValue().trim());
             this.metadata = configRow.getCell(13).getStringCellValue().trim();
+
+            String createChannels = teamListSheet.getRow(22).getCell(3).getStringCellValue().trim();
+            this.createChannels = createChannels.equals("YES");
         }
         catch (IOException exception) {
             exception.printStackTrace();
@@ -71,5 +77,9 @@ public class TournamentConfig {
 
     public TournamentType getTournamentType() {
         return tournamentType;
+    }
+
+    public boolean createChannels() {
+        return this.createChannels;
     }
 }

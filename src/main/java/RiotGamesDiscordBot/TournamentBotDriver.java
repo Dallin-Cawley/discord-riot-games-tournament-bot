@@ -3,43 +3,24 @@ package RiotGamesDiscordBot;
 import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
+import RiotGamesDiscordBot.Tournament.Tournament;
 import RiotGamesDiscordBot.Tournament.TournamentManager;
 import com.google.gson.Gson;
-import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.TextChannel;
+import com.google.gson.GsonBuilder;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @RestController
 public class TournamentBotDriver {
-    @Resource(name = "tournamentBot")
-    private JDA discordAPI;
-
-    @Resource(name = "textChannels")
-    private List<TextChannel> textChannels;
-
-    @Resource(name = "tournamentManager")
-    private TournamentManager tournamentManager;
-
-
-    @PostMapping(value = "/sendMessage", params = {"message"})
-    public @ResponseBody
-    String sendMessage(@RequestParam(value = "message") String message) {
-        this.textChannels.get(0).sendMessage(message).queue();
-
-        return "Message sent";
-    }
 
     @PostMapping(value = "/matchResult")
     public @ResponseBody
@@ -47,8 +28,33 @@ public class TournamentBotDriver {
         System.out.println("MatchResultJson: " + matchResultJson);
         MatchResult matchResult = new Gson().fromJson(matchResultJson, MatchResult.class);
 
-        this.tournamentManager.advanceTournament(matchResult);
+        String prettyPrintJson = new GsonBuilder().setPrettyPrinting().create().toJson(matchResult);
+        System.out.println(prettyPrintJson);
+
+        TournamentManager.getInstance().advanceTournament(matchResult);
         return "Done";
+    }
+
+    @GetMapping(value = "/getTournament")
+    public ResponseEntity<Object> getTournament(@RequestHeader Map<String, String> headers) {
+
+        System.out.println("headers: " + headers);
+
+        if (!headers.get("host").contains("localhost")) {
+            return ResponseEntity.status(403).body("Permission Denied");
+        }
+        if (!headers.containsKey("tournamentId".toLowerCase(Locale.ROOT))) {
+            return ResponseEntity.badRequest().body("Missing tournamentId");
+        }
+        long tournamentId = Long.parseLong(headers.get("tournamentId".toLowerCase(Locale.ROOT)));
+        Tournament tournament = TournamentManager.getInstance().getTournament(tournamentId);
+
+        if (tournament == null) {
+            return ResponseEntity.status(404).body("Tournament Id (" + tournamentId + ") Not Found");
+        }
+
+
+        return ResponseEntity.ok().body(new Gson().toJson(tournament));
     }
 
     @RequestMapping(value = "/riot.txt")

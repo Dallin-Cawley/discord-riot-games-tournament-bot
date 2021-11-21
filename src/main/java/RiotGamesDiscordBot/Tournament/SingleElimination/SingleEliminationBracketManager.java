@@ -13,8 +13,8 @@ import java.awt.image.BufferedImage;
 import java.util.List;
 
 public class SingleEliminationBracketManager extends BracketManager {
-    public SingleEliminationBracketManager(JDA discordAPI, TextChannel commandChannel) {
-        super(discordAPI);
+    public SingleEliminationBracketManager() {
+        super();
     }
 
     @Override

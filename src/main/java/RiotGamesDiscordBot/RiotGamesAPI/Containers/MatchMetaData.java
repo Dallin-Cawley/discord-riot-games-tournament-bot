@@ -1,7 +1,7 @@
 package RiotGamesDiscordBot.RiotGamesAPI.Containers;
 
 public class MatchMetaData {
-    private final long tournamentId;
+    private long tournamentId;
     private final String matchId;
 
     public MatchMetaData(long tournamentId, String matchId) {
@@ -17,6 +17,10 @@ public class MatchMetaData {
         return tournamentId;
     }
 
+    public void setTournamentId(long tournamentId) {
+        this.tournamentId = tournamentId;
+    }
+
     @Override
     public boolean equals(Object object) {
         if (object instanceof MatchMetaData) {
@@ -24,5 +28,10 @@ public class MatchMetaData {
         }
 
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "Tournament ID: " + this.tournamentId + "\nMatch ID: " + this.matchId;
     }
 }

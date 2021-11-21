@@ -1,18 +1,11 @@
 package RiotGamesDiscordBot.Tournament.RoundRobin;
 
-import RiotGamesDiscordBot.EventHandling.InputEventManager;
 import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchMetaData;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.Parameters.TournamentCodeParameters;
-import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
-import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
 import RiotGamesDiscordBot.Tournament.Match;
 import RiotGamesDiscordBot.Tournament.Round;
 import RiotGamesDiscordBot.Tournament.Team;
-import RiotGamesDiscordBot.Tournament.TournamentConfig;
-import com.google.gson.Gson;
-import net.dv8tion.jda.api.entities.TextChannel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,14 +14,10 @@ import java.util.UUID;
 public class RoundGenerator {
     private final List<Team> topRow;
     private final List<Team> bottomRow;
-    private final long tournamentId;
-    private final TournamentConfig tournamentConfig;
 
-    public RoundGenerator(List<Team> teams, long tournamentId, TournamentConfig tournamentConfig) {
+    public RoundGenerator(List<Team> teams) {
         this.topRow = new ArrayList<>();
         this.bottomRow = new ArrayList<>();
-        this.tournamentId = tournamentId;
-        this.tournamentConfig = tournamentConfig;
 
         int lastItem = teams.size() - 1;
         for (int i = 0; i < (teams.size() / 2); i++) {
@@ -38,7 +27,7 @@ public class RoundGenerator {
 
     }
 
-    public Round generateRound(int roundNum) {
+    public Round generateRound(int roundNum, long tournamentId) {
         List<Match> matches = new ArrayList<>();
 
         //Iterate through each pair of teams to create a match
@@ -47,10 +36,13 @@ public class RoundGenerator {
             Team teamOne = this.topRow.get(i);
             Team teamTwo = this.bottomRow.get(i);
 
-            MatchMetaData matchMetaData = new MatchMetaData(this.tournamentId, UUID.randomUUID().toString());
+            MatchMetaData metaData = new MatchMetaData(tournamentId, UUID.randomUUID().toString());
 
-            Match match = new Match(teamOne, teamTwo, matchMetaData);
+            Match match = new Match(teamOne, teamTwo);
+            match.setMetaData(metaData);
             matches.add(match);
+
+            Logger.log(match + "\n\n" + match.getMetaData().getTournamentId() + " : " + match.getMetaData().getMatchId(), Level.INFO);
         }
 
 

@@ -1,32 +1,24 @@
 package RiotGamesDiscordBot.Commands;
 
 import RiotGamesDiscordBot.Commands.CommandHandlers.CommandHandler;
+import RiotGamesDiscordBot.Commands.CommandHandlers.InteractionCommandHandler;
 import RiotGamesDiscordBot.Commands.CommandHandlers.SummonerInfoCommandHandler;
 import RiotGamesDiscordBot.Commands.CommandHandlers.TournamentCommandHandler;
-import RiotGamesDiscordBot.EventHandling.InputEventManager;
-import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.BracketManager;
-import RiotGamesDiscordBot.Tournament.TournamentManager;
-import com.google.gson.Gson;
 import net.dv8tion.jda.api.JDA;
-import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.events.channel.category.CategoryCreateEvent;
+import net.dv8tion.jda.api.events.channel.text.TextChannelCreateEvent;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
 public class DiscordBotCommands extends ListenerAdapter {
-    private final Gson gson;
-    private BracketManager bracketManager;
     private final JDA discordAPI;
-    private final InputEventManager inputEventManager;
-    private final TournamentManager tournamentManager;
 
-    public DiscordBotCommands(JDA discordAPI, TournamentManager tournamentManager) {
-        this.gson = new Gson();
+    public DiscordBotCommands(JDA discordAPI) {
         this.discordAPI = discordAPI;
-        this.tournamentManager = tournamentManager;
-        this.inputEventManager = new InputEventManager(this.tournamentManager);
     }
 
     public void onGuildMessageReceived(GuildMessageReceivedEvent event) {
@@ -42,29 +34,34 @@ public class DiscordBotCommands extends ListenerAdapter {
                     //Summoner Info
                     case "-si":
                         commandHandler = new SummonerInfoCommandHandler(event, messageIterator);
-                        commandHandler.handle();
                         break;
                     //Tournament Start
                     case "-t":
-                        if (messageIterator.hasNext()) {
-                            if (messageIterator.next().equals("--rectify")) {
-                                this.inputEventManager.handleEvent(messageIterator);
-                                break;
-                            }
-                        }
-                        else {
-                            commandHandler = new TournamentCommandHandler(event, messageIterator, this.inputEventManager, this.tournamentManager, this.discordAPI);
-                            commandHandler.handle();
-                        }
+                        System.out.println("Creating Tournament");
+                        commandHandler = new TournamentCommandHandler(event, messageIterator);
+                        break;
+                    case "-i":
+                        System.out.println("Handling interaction");
+                        commandHandler = new InteractionCommandHandler(event, messageIterator);
                         break;
                     default:
-                        commandHandler = new TournamentCommandHandler(event, messageIterator, this.inputEventManager, this.tournamentManager, this.discordAPI);
-                        commandHandler.handle();
-
+                        commandHandler = new TournamentCommandHandler(event, messageIterator);
                 }
+                commandHandler.handle();
             } else {
                 event.getChannel().sendMessage("Please provide a command.").queue();
             }
         }
     }
+
+    @Override
+    public void onCategoryCreate(@NotNull CategoryCreateEvent event) {
+        System.out.println("CategoryCreate event: " + event);
+    }
+
+    @Override
+    public void onTextChannelCreate(@NotNull TextChannelCreateEvent event) {
+        System.out.println("TextChannelCreate event: " + event);
+    }
 }
+

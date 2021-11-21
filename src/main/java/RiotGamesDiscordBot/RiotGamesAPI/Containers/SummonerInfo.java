@@ -1,5 +1,6 @@
 package RiotGamesDiscordBot.RiotGamesAPI.Containers;
 
+import RiotGamesDiscordBot.Tournament.RoundRobin.Events.Containers.MemberOnMultipleTeamsContainer;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
@@ -78,6 +79,9 @@ public class SummonerInfo  {
     public boolean equals(Object object) {
         if (object instanceof SummonerInfo) {
             return ((SummonerInfo) object).getSummonerName().equals(this.summonerName);
+        }
+        else if (object instanceof MemberOnMultipleTeamsContainer) {
+            return ((MemberOnMultipleTeamsContainer) object).summonerInfo.equals(this);
         }
 
         return false;

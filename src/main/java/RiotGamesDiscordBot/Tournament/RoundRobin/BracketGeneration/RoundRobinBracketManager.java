@@ -1,5 +1,6 @@
 package RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration;
 
+import RiotGamesDiscordBot.Logging.DiscordLog.DiscordLogger;
 import RiotGamesDiscordBot.Logging.Level;
 import RiotGamesDiscordBot.Logging.Logger;
 import RiotGamesDiscordBot.RiotGamesAPI.BracketGeneration.BracketManager;
@@ -7,11 +8,14 @@ import RiotGamesDiscordBot.Tournament.Match;
 import RiotGamesDiscordBot.Tournament.Round;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
 import RiotGamesDiscordBot.Tournament.Team;
+import RiotGamesDiscordBot.TournamentBotApplication;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.TextChannel;
+import org.apache.juli.logging.Log;
 
 import javax.imageio.ImageIO;
+import javax.security.auth.login.LoginException;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
@@ -22,43 +26,19 @@ import java.util.List;
 
 @SuppressWarnings("DuplicatedCode")
 public class RoundRobinBracketManager extends BracketManager  {
-    private final TextChannel commandChannel;
     private final List<RoundImage> roundImages;
     private final List<Team> teams;
     private String currentStandingMessageId;
 
-    public RoundRobinBracketManager(JDA discordAPI, TextChannel commandChannel, List<Team> teams) {
-        super(discordAPI);
-        this.commandChannel = commandChannel;
+    public RoundRobinBracketManager(List<Team> teams, TextChannel tournamentChannel) {
+        super();
         this.roundImages = new ArrayList<>();
         this.teams = teams;
+        this.tournamentChannel = tournamentChannel;
     }
 
     @Override
-    public void generateBracket(List<Round> rounds) throws TournamentChannelNotFound {
-
-        //Get the text channel the Tournament Bot will Post the current standings
-        Logger.log("Attempting to find 'tournament-details' channel", Level.INFO);
-        if (this.discordAPI.getTextChannels().size() <= 0) {
-            Logger.log("There are no text channels.", Level.WARNING);
-            throw new TournamentChannelNotFound(commandChannel);
-        }
-        else {
-            List<TextChannel> textChannels = this.discordAPI.getTextChannels();
-            for (TextChannel textChannel : textChannels) {
-                if (textChannel.getName().equals("tournament-details")) {
-                    Logger.log("Found 'tournament-details' TextChannel", Level.INFO);
-                    this.tournamentChannel = textChannel;
-                    break;
-                }
-            }
-
-            // Tournament channel was not found.
-            if (tournamentChannel == null) {
-                Logger.log("Did not find 'tournament-details' TextChannel", Level.WARNING);
-                throw new TournamentChannelNotFound(commandChannel);
-            }
-        }
+    public void generateBracket(List<Round> rounds) {
 
 
         /*##################################################################################################
@@ -71,8 +51,7 @@ public class RoundRobinBracketManager extends BracketManager  {
             Logger.log("Creating RoundImage : " + round.getRoundNum(), Level.INFO);
             try {
                 this.roundImages.add(new RoundImage(round));
-            }
-            catch(IOException exception) {
+            } catch (IOException exception) {
                 Logger.log("Error generating RoundImage " + round.getRoundNum(), Level.ERROR);
                 exception.printStackTrace();
             }
@@ -89,8 +68,7 @@ public class RoundRobinBracketManager extends BracketManager  {
 
         try {
             ImageIO.write(this.bracketImage, "png", new File("src/main/resources/currentStandings/current_standing.png"));
-        }
-        catch (IOException exception) {
+        } catch (IOException exception) {
             exception.printStackTrace();
         }
 
