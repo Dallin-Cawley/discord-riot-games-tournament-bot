@@ -271,7 +271,7 @@ public class RoundRobinTournament extends Tournament {
     @Override
     public void advanceTournament(MatchResult matchResult) {
         Round currentRound = this.rounds.get(this.currentRound - 1);
-        MatchMetaData metaData = new Gson().fromJson(matchResult.getMetaData().getTitle(), MatchMetaData.class);
+        MatchMetaData metaData = matchResult.getMetaData();
 
         for (Match match : currentRound) {
             if (metaData.getMatchId().equals(match.getMetaData().getMatchId())) {

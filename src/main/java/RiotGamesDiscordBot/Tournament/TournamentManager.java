@@ -176,7 +176,7 @@ public class TournamentManager extends Thread{
                 this.advanceTournamentSemaphore.acquire();
                 List<MatchResult> removeMatchResultsFrom = new ArrayList<>();
                 for (MatchResult matchResult : this.matchResults) {
-                    MatchMetaData metaData = new Gson().fromJson(matchResult.getMetaData().getTitle(), MatchMetaData.class);
+                    MatchMetaData metaData = matchResult.getMetaData();
                     Logger.log(metaData.toString(), Level.INFO);
                     try {
                         // Find Tournament the metaData belongs to and advance it
