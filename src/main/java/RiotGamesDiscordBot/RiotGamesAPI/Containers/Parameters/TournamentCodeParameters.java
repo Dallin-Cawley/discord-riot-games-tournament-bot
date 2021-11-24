@@ -14,7 +14,7 @@ import java.util.List;
 public class TournamentCodeParameters {
     private final List<String> allowedSummonerIds;
     private final double teamSize;
-    private final MatchMetaData metadata;
+    private final String metadata;
     private final PickType pickType;
     private final MapType mapType;
     private final SpectatorType spectatorType;
@@ -24,7 +24,7 @@ public class TournamentCodeParameters {
         this.pickType = tournamentConfig.getPickType();
         this.mapType = tournamentConfig.getMapType();
         this.spectatorType = tournamentConfig.getSpectatorType();
-        this.metadata = metaData;
+        this.metadata = new Gson().toJson(metaData);
 
         this.allowedSummonerIds = new ArrayList<>();
         this.allowedSummonerIds.addAll(allowedSummonerIds);

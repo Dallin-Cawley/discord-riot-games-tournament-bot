@@ -14,10 +14,8 @@ import RiotGamesDiscordBot.RiotGamesAPI.SummonerNotFoundException;
 import RiotGamesDiscordBot.Tournament.*;
 import RiotGamesDiscordBot.Tournament.RoundRobin.BracketGeneration.RoundRobinBracketManager;
 import RiotGamesDiscordBot.Tournament.RoundRobin.Events.DuplicateOpponentErrorEvent;
-import RiotGamesDiscordBot.Tournament.RoundRobin.Exception.TournamentChannelNotFound;
 import com.google.gson.Gson;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 
 import java.io.IOException;
@@ -128,10 +126,12 @@ public class RoundRobinTournament extends Tournament {
                     }
                 }
 
-                TournamentCodeParameters parameters = new TournamentCodeParameters(summonerIds, this.tournamentConfig, match.getMetaData());
+                TournamentCodeParameters parameters = new TournamentCodeParameters(summonerIds, this.tournamentConfig, match.getMatchMetaData());
                 try {
-                    String[] tournamentCodes = gson.fromJson(riotGamesAPI.getTournamentCodes(this.getTournamentId(),
-                            1, parameters), String[].class);
+                    String response = riotGamesAPI.getTournamentCodes(this.getTournamentId(),
+                            1, parameters);
+                    System.out.println(response);
+                    String[] tournamentCodes = gson.fromJson(response, String[].class);
                     Logger.log("\tGenerated tournament code for " +
                             match.getTeamOne().getTeamName() + " vs " + match.getTeamTwo().getTeamName(), Level.INFO);
                     match.setTournamentCode(tournamentCodes[0]);
@@ -274,7 +274,7 @@ public class RoundRobinTournament extends Tournament {
         MatchMetaData metaData = matchResult.getMetaData();
 
         for (Match match : currentRound) {
-            if (metaData.getMatchId().equals(match.getMetaData().getMatchId())) {
+            if (metaData.getMatchId().equals(match.getMatchMetaData().getMatchId())) {
                 match.setMatchResult(matchResult);
                 break;
             }

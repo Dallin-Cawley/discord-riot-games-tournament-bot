@@ -42,7 +42,7 @@ public class MatchComplete {
 
         matchComplete.shortCode = "NA1234a-1a23b456-a1b2-1abc-ab12-1234567890ab";
         matchComplete.metaData = new MetaData();
-        matchComplete.metaData.title = new Gson().toJson(match.getMetaData());
+        matchComplete.metaData.title = new Gson().toJson(match.getMatchMetaData());
         matchComplete.gameId = 1234567890;
         matchComplete.gameName = "a123bc45-ab1c-1a23-ab12-12345a67b89c";
         matchComplete.gameType = "PRACTICE";
