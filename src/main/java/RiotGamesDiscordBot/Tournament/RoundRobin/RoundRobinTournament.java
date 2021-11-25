@@ -47,30 +47,7 @@ public class RoundRobinTournament extends Tournament {
      */
     @Override
     public void setup() {
-        // Get full summoner information from RIOT
-        Gson gson = new Gson();
-        RiotGamesAPI api = new RiotGamesAPI();
-        Set<String> keySet = preSetupTeams.keySet();
-        for (String teamName : keySet) {
-            List<String> summonerNames = preSetupTeams.get(teamName);
-            Team team = new Team(teamName);
-            for (String summonerName: summonerNames) {
-                try {
-                    SummonerInfo summonerInfo = gson.fromJson(api.getSummonerInfoByName(summonerName), SummonerInfo.class);
-                    team.addMember(summonerInfo);
-                }
-                catch (IOException exception) {
-                    exception.printStackTrace();
-                    if (exception instanceof SummonerNotFoundException) {
-                        SummonerNotFoundErrorEvent event = new SummonerNotFoundErrorEvent(summonerName);
-                        this.eventManager.addEvent(event);
-                    }
-
-                    return;
-                }
-            }
-            this.teams.add(team);
-        }
+        this.setUpTeams();
 
         // Place a fake team if there is an odd number of teams.
         if (teams.size() % 2 == 1) {
