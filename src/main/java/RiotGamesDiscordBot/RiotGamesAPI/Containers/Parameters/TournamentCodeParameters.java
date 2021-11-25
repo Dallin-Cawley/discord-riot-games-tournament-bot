@@ -26,9 +26,6 @@ public class TournamentCodeParameters {
         this.spectatorType = tournamentConfig.getSpectatorType();
         this.metadata = new Gson().toJson(metaData);
 
-
-
-        System.out.println("Meta Data: " + this.metadata);
         this.allowedSummonerIds = new ArrayList<>();
         this.allowedSummonerIds.addAll(allowedSummonerIds);
     }

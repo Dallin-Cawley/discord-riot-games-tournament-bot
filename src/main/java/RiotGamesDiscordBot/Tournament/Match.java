@@ -97,9 +97,10 @@ public class Match implements Iterable<Team> {
         return winner;
     }
 
-    public MatchMetaData getMetaData() {
+    public MatchMetaData getMatchMetaData() {
         return metaData;
     }
+
 
     public boolean isMatch(MatchResult matchResult) {
         return this.teamOne.containsMember(matchResult.getWinningTeam().get(0)) || this.teamTwo.containsMember(matchResult.getWinningTeam().get(0));
@@ -108,7 +109,7 @@ public class Match implements Iterable<Team> {
     @Override
     public boolean equals(Object object) {
         if (object instanceof Match) {
-            return this.metaData == ((Match) object).getMetaData();
+            return this.metaData == ((Match) object).getMatchMetaData();
         }
 
         return false;

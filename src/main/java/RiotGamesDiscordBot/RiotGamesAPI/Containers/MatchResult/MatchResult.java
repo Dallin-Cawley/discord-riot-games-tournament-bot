@@ -1,5 +1,7 @@
 package RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult;
 
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchMetaData;
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
@@ -18,7 +20,7 @@ public class MatchResult {
     String shortCode;
 
     @SerializedName("metaData")
-    MetaData metaData;
+    String metaData;
 
     @SerializedName("gameId")
     long gameId;
@@ -38,13 +40,13 @@ public class MatchResult {
     @SerializedName("region")
     String region;
 
-    public MetaData getMetaData() {
-        return metaData;
+    public MatchMetaData getMetaData() {
+        return new Gson().fromJson(this.metaData, MatchMetaData.class);
     }
 
     @Override
     public String toString() {
-        return this.metaData.title + " : " + this.region + " - " + this.gameMode;
+        return this.metaData + " : " + this.region + " - " + this.gameMode;
     }
 
     public List<SummonerName> getLosingTeam() {

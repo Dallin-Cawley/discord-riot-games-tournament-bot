@@ -176,7 +176,7 @@ public class TournamentManager extends Thread{
                 this.advanceTournamentSemaphore.acquire();
                 List<MatchResult> removeMatchResultsFrom = new ArrayList<>();
                 for (MatchResult matchResult : this.matchResults) {
-                    MatchMetaData metaData = new Gson().fromJson(matchResult.getMetaData().getTitle(), MatchMetaData.class);
+                    MatchMetaData metaData = matchResult.getMetaData();
                     Logger.log(metaData.toString(), Level.INFO);
                     try {
                         // Find Tournament the metaData belongs to and advance it
@@ -290,7 +290,7 @@ public class TournamentManager extends Thread{
             // Create a Tournament ID for the tournament after passing
             RiotGamesAPI riotGamesAPI = new RiotGamesAPI();
             try {
-                int providerID = riotGamesAPI.getProviderID(new URL("https://www.google.com"), Region.NA);
+                int providerID = riotGamesAPI.getProviderID(new URL("https://discord-lol-tournent-bot.herokuapp.com/matchResult/"), Region.NA);
                 long tournamentId = riotGamesAPI.getTournamentID(providerID, "New Tournament");
                 tournament.setProviderId(providerID);
                 tournament.setTournamentId(tournamentId);

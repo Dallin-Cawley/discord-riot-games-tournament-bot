@@ -42,7 +42,7 @@ public class RoundGenerator {
             match.setMetaData(metaData);
             matches.add(match);
 
-            Logger.log(match + "\n\n" + match.getMetaData().getTournamentId() + " : " + match.getMetaData().getMatchId(), Level.INFO);
+            Logger.log(match + "\n\n" + match.getMatchMetaData().getTournamentId() + " : " + match.getMatchMetaData().getMatchId(), Level.INFO);
         }
 
 
