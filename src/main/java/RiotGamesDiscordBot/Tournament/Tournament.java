@@ -3,15 +3,17 @@ package RiotGamesDiscordBot.Tournament;
 import RiotGamesDiscordBot.EventHandling.EventManager;
 import RiotGamesDiscordBot.Logging.DiscordLog.DiscordLogger;
 import RiotGamesDiscordBot.RiotGamesAPI.Containers.MatchResult.MatchResult;
+import RiotGamesDiscordBot.RiotGamesAPI.Containers.SummonerInfo;
+import RiotGamesDiscordBot.RiotGamesAPI.Event.SummonerNotFoundErrorEvent;
+import RiotGamesDiscordBot.RiotGamesAPI.RiotGamesAPI;
+import RiotGamesDiscordBot.RiotGamesAPI.SummonerNotFoundException;
 import RiotGamesDiscordBot.Tournament.Events.CreateChannelInstructionMessageEvent;
+import com.google.gson.Gson;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 
 public abstract class Tournament {
@@ -151,6 +153,33 @@ public abstract class Tournament {
         }
 
         return idle;
+    }
+
+    protected void setUpTeams() {
+        // Get full summoner information from RIOT
+        Gson gson = new Gson();
+        RiotGamesAPI api = new RiotGamesAPI();
+        Set<String> keySet = preSetupTeams.keySet();
+        for (String teamName : keySet) {
+            List<String> summonerNames = preSetupTeams.get(teamName);
+            Team team = new Team(teamName);
+            for (String summonerName: summonerNames) {
+                try {
+                    SummonerInfo summonerInfo = gson.fromJson(api.getSummonerInfoByName(summonerName), SummonerInfo.class);
+                    team.addMember(summonerInfo);
+                }
+                catch (IOException exception) {
+                    exception.printStackTrace();
+                    if (exception instanceof SummonerNotFoundException) {
+                        SummonerNotFoundErrorEvent event = new SummonerNotFoundErrorEvent(summonerName);
+                        this.eventManager.addEvent(event);
+                    }
+
+                    return;
+                }
+            }
+            this.teams.add(team);
+        }
     }
 
     public void setDone(boolean done) {

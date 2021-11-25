@@ -284,7 +284,6 @@ public class TournamentManager extends Thread{
     }
 
     public RegisterTournamentStatus registerTournament(Tournament tournament) {
-        Logger.log("Registering Tournament ID: " + tournament.getTournamentId(), Level.ERROR);
         RegisterTournamentStatus status = this.validateTournament(tournament);
 
         if (status.getStatusCode() == RegisterTournamentStatusCode.OK) {

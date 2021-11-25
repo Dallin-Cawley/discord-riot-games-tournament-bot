@@ -45,7 +45,6 @@ public class TournamentCommandHandler extends CommandHandler {
 
         // Get the Team Names and Members
         Map<String, List<String>> teams = this.getTeamsFromExcelFile(teamListFile);
-
         //  There was an error with the tournament config file.
         if (teams == null) {
             return;
