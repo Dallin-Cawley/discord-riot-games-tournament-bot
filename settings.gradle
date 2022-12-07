@@ -1,3 +1,1 @@
 rootProject.name = 'Tournament Discord Bot'
-include 'HelperClasses'
-
